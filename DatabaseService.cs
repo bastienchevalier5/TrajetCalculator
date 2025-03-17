@@ -4,13 +4,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace TrajetCalculator
 {
-    public class DatabaseService(TrajetCalculatorDbContext context)
+    public class DatabaseService
     {
-        private readonly TrajetCalculatorDbContext _context = context;
+        private readonly TrajetCalculatorDbContext _context;
+
+        public DatabaseService(TrajetCalculatorDbContext context)
+        {
+            _context = context;
+        }
+
         public async Task<List<Commune>> GetCommunesAsync()
         {
-            return await _context.Communes
-                .ToListAsync();
+            return await _context.Communes.ToListAsync();
         }
     }
 }
