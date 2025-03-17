@@ -32,9 +32,17 @@ function initMap() {
     maxZoom: 19
   }).addTo(map);
 
-  L.marker([48.8566, 2.3522]).addTo(map)
-    .bindPopup("Paris")
-    .openPopup();
+    var customPin = L.divIcon({
+        className: 'custom-pin',
+        html: '<div class="pin-content"></div>',
+        iconSize: [20, 20], // Taille de l'icône
+        iconAnchor: [20, 40], // Point d'ancrage
+        popupAnchor: [0, -35] // Position du popup
+    });
+
+    L.marker([48.8566, 2.3522], { icon: customPin }).addTo(map)
+        .bindPopup("Paris")
+        .openPopup();
 
   // Ajouter un sélecteur de thème CartoDB simple
   addCartoDBThemeSelector();
