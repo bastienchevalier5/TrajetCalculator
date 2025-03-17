@@ -36,7 +36,7 @@ function initMap() {
         className: 'custom-pin',
         html: '<div class="pin-content"></div>',
         iconSize: [20, 20], // Taille de l'icône
-        iconAnchor: [20, 40], // Point d'ancrage
+        iconAnchor: [10, 10], // Point d'ancrage
         popupAnchor: [0, -35] // Position du popup
     });
 
