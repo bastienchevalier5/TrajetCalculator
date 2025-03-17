@@ -1,15 +1,25 @@
 ﻿@inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
 
 
-<div class="page">
-    <div class="bg-primary m-3 p-4" style="width:400px; height:400px; border-radius:20px">
+<div>
+    <div class=" m-3 p-4 draggable" style="width:400px; height:400px; border-radius:20px; z-index: 2;" id="draggableDiv">
         <InputMenu />
     </div>
 
-    <main>
+    <main style="z-index: 1;  position: relative;">
 
-        <article class="content px-4">
-            @Body
-        </article>
+        @Body
+
     </main>
 </div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("makeDraggable", "draggableDiv");
+        }
+    }
+}
