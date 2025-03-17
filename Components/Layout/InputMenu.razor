@@ -6,42 +6,66 @@
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         border-radius:20px;
     ">
-
     <div class="bg-secondary" style="width:80px;height:5px;border-radius:20px;"></div>
-    <form class="d-flex flex-column gap-4 p-4 rounded-4">
-        <div class="d-flex gap-4 align-items-center">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
+    <form class="d-flex flex-column gap-0 p-4 rounded-4 position-relative">
+        <!-- Ligne pointillée verticale -->
+        <div class="position-absolute" style="left: 41px; top: 40px; bottom: 40px; width: 2px; border-left: 2px dashed #6c757d; z-index: 1;"></div>
+
+        <div class="d-flex gap-4 align-items-center position-relative mb-4" style="z-index: 2;">
+            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
                 <i class="bi bi-geo-alt-fill text-white m-0"></i>
             </div>
-            <input type="text" name="name" placeholder="Ville de départ" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
+            <input type="text" name="name" placeholder="Ville de départ" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
         </div>
 
-        <div class="d-flex gap-4 align-items-center">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
+        <div class="d-flex gap-4 align-items-center position-relative mb-4" style="z-index: 2;">
+            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
                 <i class="bi bi-circle-fill text-white m-0"></i>
             </div>
-            <input type="text" name="name" placeholder="Étape 1" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
+            <input type="text" name="name" placeholder="Étape 1" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
         </div>
 
-        <div class="d-flex gap-4 align-items-center">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
+        <div class="d-flex gap-4 align-items-center position-relative mb-4" style="z-index: 2;">
+            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
                 <i class="bi bi-circle-fill text-white m-0"></i>
             </div>
-            <input type="text" name="name" placeholder="Étape 2" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
+            <input type="text" name="name" placeholder="Étape 2" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
         </div>
 
-        <div class="d-flex gap-4 align-items-center">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
+        <div class="d-flex gap-4 align-items-center position-relative mb-4" style="z-index: 2;">
+            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
                 <i class="bi bi-circle-fill text-white m-0"></i>
             </div>
-            <input type="text" name="name" placeholder="Étape 3" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
+            <input type="text" name="name" placeholder="Étape 3" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
         </div>
 
-        <div class="d-flex gap-4 align-items-center">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
+        <div class="d-flex gap-4 align-items-center position-relative" style="z-index: 2;">
+            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
                 <i class="bi bi-flag-fill text-white m-0"></i>
             </div>
-            <input type="text" name="name" placeholder="Ville d'arrivée" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
+            <input type="text" name="name" placeholder="Ville d'arrivée" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
         </div>
     </form>
 </div>
+
+<style>
+    /* Style pour les inputs au focus */
+    .input-route:focus {
+        outline: none;
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.3);
+        background-color: rgba(13, 202, 240, 0.05) !important;
+    }
+
+        /* Animation subtile au focus */
+        .input-route:focus::placeholder {
+            transform: translateX(5px);
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+    /* Style pour les inputs avec texte */
+    .input-route:not(:placeholder-shown) {
+        border-color: #0d6efd !important;
+    }
+</style>
