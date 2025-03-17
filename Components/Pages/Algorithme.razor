@@ -1,16 +1,18 @@
 ﻿<h3>Calcul de distance</h3>
-
 @code {
+    @inject DatabaseService DatabaseService;
+
     public async Task<List<Commune>> LoadCitiesAsync()
     {
-        using var context = new TrajetCalculatorDbContext();
-        return await context.Communes.ToListAsync();
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptions<TrajetCalculatorDbContext>();
+        using var context = new TrajetCalculatorDbContext(options);
+        return await DatabaseService.GetCommunesAsync();
     }
 
-    private List<string> CalculItineraire(Commune villeDepart, List<Commune> requiredCities, Commune villeArrivee)
+    private async Task<List<string>> CalculItineraire(Commune villeDepart, List<Commune> requiredCities, Commune villeArrivee)
     {
-        var communes = LoadCitiesAsync().Result;
-        var shortestPath = FindOptimalRoute(communes, villeDepart.Nom, requiredCities.Select(v => v.Nom).ToList(), villeArrivee.Nom);
+        var communes = await LoadCitiesAsync();
+        var shortestPath = await FindOptimalRoute(communes, villeDepart.Label, requiredCities.Select(v => v.Label).ToList(), villeArrivee.Label);
         return shortestPath;
     }
 
@@ -57,7 +59,7 @@
 
         foreach (var commune in communes)
         {
-            distances[commune.Nom] = double.MaxValue;
+            distances[commune.Label] = double.MaxValue;
         }
         distances[start] = 0;
         pq.Add((0, start));
@@ -69,19 +71,19 @@
 
             if (current == end) break;
 
-            var currentCommune = communes.First(v => v.Nom == current);
+            var currentCommune = communes.First(v => v.Label == current);
 
             foreach (var neighbor in communes)
             {
-                if (neighbor.Nom == current) continue;
+                if (neighbor.Label == current) continue;
 
                 double newDist = dist + CalculDistanceVille(currentCommune, neighbor);
-                if (newDist < distances[neighbor.Nom])
+                if (newDist < distances[neighbor.Label])
                 {
-                    pq.Remove((distances[neighbor.Nom], neighbor.Nom));
-                    distances[neighbor.Nom] = newDist;
-                    previous[neighbor.Nom] = current;
-                    pq.Add((newDist, neighbor.Nom));
+                    pq.Remove((distances[neighbor.Label], neighbor.Label));
+                    distances[neighbor.Label] = newDist;
+                    previous[neighbor.Label] = current;
+                    pq.Add((newDist, neighbor.Label));
                 }
             }
         }
@@ -100,14 +102,23 @@
         return path.Count > 1 ? path : new List<string>();
     }
 
+    static IEnumerable<IEnumerable<T>> GetPermutations<T>(IEnumerable<T> list, int length)
+    {
+        if (length == 1) return list.Select(t => new T[] { t });
+
+        return GetPermutations(list, length - 1)
+            .SelectMany(t => list.Where(e => !t.Contains(e)),
+                        (t1, t2) => t1.Concat(new T[] { t2 }));
+    }
+
     private double CalculDistanceVille(Commune villeDepart, Commune villeArrivee)
     {
         const double kmPerDegree = 111.0;
 
-        double deltaLatitude = villeArrivee.Latitude - villeDepart.Latitude;
-        double deltaLongitude = villeArrivee.Longitude - villeDepart.Longitude;
+        double deltaLatitude = (double)(villeArrivee.Latitude - villeDepart.Latitude);
+        double deltaLongitude = (double)(villeArrivee.Longitude - villeDepart.Longitude);
 
-        double averageLatitudeRad = (Math.PI / 180) * ((villeDepart.Latitude + villeArrivee.Latitude) / 2.0);
+        double averageLatitudeRad = (Math.PI / 180) * ((double)(villeDepart.Latitude + villeArrivee.Latitude) / 2.0);
 
         double deltaX = kmPerDegree * deltaLatitude;
         double deltaY = kmPerDegree * Math.Cos(averageLatitudeRad) * deltaLongitude;
@@ -115,4 +126,3 @@
         return Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
     }
 }
-
