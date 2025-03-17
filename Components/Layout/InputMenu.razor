@@ -1,47 +1,96 @@
-﻿<div class="text-center pt-2 d-flex flex-column align-items-center"
-     style="
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        border-radius:20px;
-    ">
+﻿@inject DatabaseService DatabaseService
+@using Microsoft.AspNetCore.Components.Forms
+
+@code {
+    private List<Commune> communes = new();
+    private List<Commune> filteredCommunes = new();
+    private string? Depart;
+    private string? Etape1;
+    private string? Etape2;
+    private string? Etape3;
+    private string? Arrivee;
+
+    protected override async Task OnInitializedAsync()
+    {
+        communes = await DatabaseService.GetCommunesAsync();
+    }
+
+    private void FilterCommunes(string searchTerm, ref List<Commune> filteredList)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredList = new List<Commune>();
+        }
+        else
+        {
+            filteredList = communes
+                .Where(c => c.Label != null && c.Label.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .Take(10) // Limite à 10 résultats
+                .ToList();
+        }
+    }
+
+    private void SelectCommune(Commune commune, ref string? selectedValue)
+    {
+        selectedValue = commune.Label;
+        filteredCommunes.Clear();
+    }
+
+    private Dictionary<string, string?> trajetEtapes = new()
+    {
+        { "Départ", null },
+        { "Étape 1", null },
+        { "Étape 2", null },
+        { "Étape 3", null },
+        { "Arrivée", null }
+    };
+}
+
+<div class="text-center pt-2 d-flex flex-column align-items-center"
+     style="background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 20px;">
 
     <div class="bg-secondary" style="width:80px;height:5px;border-radius:20px;"></div>
     <form class="d-flex flex-column gap-4 p-4 rounded-4">
-        <div class="d-flex gap-4 align-items-center">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
-                <i class="bi bi-geo-alt-fill text-white m-0"></i>
-            </div>
-            <input type="text" name="name" placeholder="Ville de départ" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
-        </div>
 
-        <div class="d-flex gap-4 align-items-center">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
-                <i class="bi bi-circle-fill text-white m-0"></i>
-            </div>
-            <input type="text" name="name" placeholder="Étape 1" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
-        </div>
+        @foreach (var etape in trajetEtapes.Keys.ToList())
+        {
+            <div class="position-relative w-100">
+                <input type="text"
+                       list="communesList"
+                       class="form-control p-2 border border-secondary text-white w-100 bg-transparent"
+                       placeholder="@etape"
+                       value="@trajetEtapes[etape]"
+                       @oninput="e => trajetEtapes[etape] = e.Value?.ToString() ?? string.Empty"
+                       style="border-radius:50px;" />
 
-        <div class="d-flex gap-4 align-items-center">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
-                <i class="bi bi-circle-fill text-white m-0"></i>
-            </div>
-            <input type="text" name="name" placeholder="Étape 2" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
-        </div>
+                <datalist id="communesList">
+                    @foreach (var commune in communes.OrderBy(c => c.Label))
+                    {
+                        <option value="@commune.Label (@commune.ZipCode)"></option>
+                    }
+                </datalist>
 
-        <div class="d-flex gap-4 align-items-center">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
-                <i class="bi bi-circle-fill text-white m-0"></i>
-            </div>
-            <input type="text" name="name" placeholder="Étape 3" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
-        </div>
 
-        <div class="d-flex gap-4 align-items-center">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
-                <i class="bi bi-flag-fill text-white m-0"></i>
+                @if (filteredCommunes.Count > 0)
+                {
+                    <ul class="list-group position-absolute w-100 mt-1 bg-dark text-white"
+                        style="border-radius: 10px; z-index: 1000;">
+                        @foreach (var commune in filteredCommunes)
+                        {
+                            <li class="list-group-item list-group-item-action bg-dark text-white"
+                                style="cursor: pointer;"
+                                @onclick="() => trajetEtapes[etape] = commune.Label">
+                                @commune.Label (@commune.ZipCode)
+                            </li>
+                        }
+                    </ul>
+                }
             </div>
-            <input type="text" name="name" placeholder="Ville d'arrivée" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
-        </div>
+        }
+
     </form>
 </div>
