@@ -1,6 +1,16 @@
-﻿namespace TrajetCalculator
+﻿
+
+using Microsoft.EntityFrameworkCore;
+
+namespace TrajetCalculator
 {
-    internal class DatabaseService
+    public class DatabaseService(TrajetCalculatorDbContext context)
     {
+        private readonly TrajetCalculatorDbContext _context = context;
+        public async Task<List<Commune>> GetCommunesAsync()
+        {
+            return await _context.Communes
+                .ToListAsync();
+        }
     }
 }
