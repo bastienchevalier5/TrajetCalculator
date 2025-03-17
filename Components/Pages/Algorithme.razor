@@ -3,7 +3,7 @@
 @code {
     public async Task<List<Commune>> LoadCitiesAsync()
     {
-        using var context = new AppDbContext();
+        using var context = new TrajetCalculatorDbContext();
         return await context.Communes.ToListAsync();
     }
 
@@ -115,5 +115,4 @@
         return Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
     }
 }
-
 
