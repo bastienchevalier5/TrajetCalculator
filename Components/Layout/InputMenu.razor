@@ -165,35 +165,3 @@
             background: rgba(108, 117, 125, 0.8);
         }
 </style>
-
-@code {
-    // Classe pour représenter une étape
-    private class Waypoint
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-
-    // Liste des étapes
-    private List<Waypoint> Waypoints { get; set; } = new List<Waypoint>();
-
-    // Compteur pour générer des ID uniques
-    private int waypointCounter = 1;
-
-    // Ajouter une nouvelle étape
-    private void AddWaypoint()
-    {
-        Waypoints.Add(new Waypoint { Id = waypointCounter });
-        waypointCounter++;
-    }
-
-    // Supprimer une étape existante
-    private void RemoveWaypoint(int id)
-    {
-        var waypoint = Waypoints.FirstOrDefault(w => w.Id == id);
-        if (waypoint != null)
-        {
-            Waypoints.Remove(waypoint);
-        }
-    }
-}
