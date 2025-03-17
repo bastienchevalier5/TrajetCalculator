@@ -32,12 +32,22 @@ function initMap() {
     maxZoom: 19
   }).addTo(map);
 
-  L.marker([48.8566, 2.3522]).addTo(map)
-    .bindPopup("Paris")
-    .openPopup();
+    var customPin = L.divIcon({
+        className: 'custom-pin',
+        html: '<div class="pin-content"></div>',
+        iconSize: [20, 20], // Taille de l'icône
+        iconAnchor: [10, 10], // Point d'ancrage
+        popupAnchor: [0, -35] // Position du popup
+    });
+
+    L.marker([48.8566, 2.3522], { icon: customPin }).addTo(map)
+        .bindPopup("Paris")
+        .openPopup();
 
   // Ajouter un sélecteur de thème CartoDB simple
-  addCartoDBThemeSelector();
+    addCartoDBThemeSelector();
+
+    adjustTextColors('dark_all');
 }
 
 // Fonction pour ajouter un sélecteur de thème CartoDB
@@ -93,6 +103,30 @@ selectorDiv.appendChild(select);
 document.body.appendChild(selectorDiv);
       }
 
+// Fonction pour ajuster les couleurs du texte en fonction du thème
+function adjustTextColors(theme) {
+    // Récupérer tous les éléments input avec la classe input-route
+    var inputs = document.querySelectorAll('.input-route');
+
+    // Définir les couleurs en fonction du thème
+    var isDarkTheme = theme.includes('Dark');
+    var textColor = isDarkTheme ? '#ffffff' : '#333333';
+    var borderColor = isDarkTheme ? 'rgba(0, 0, 0, 0.3)':'rgba(255, 255, 255, 0.3)' ;
+    var containerBg = isDarkTheme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)' ;
+
+    // Mettre à jour tous les inputs
+    inputs.forEach(function (input) {
+        input.style.color = textColor;
+        input.style.borderColor = borderColor;
+    });
+
+    // Mettre à jour le conteneur principal
+    var routeContainer = document.querySelector('.route-container').parentElement;
+    if (routeContainer) {
+        routeContainer.style.background = containerBg;
+        routeContainer.style.borderColor = borderColor;
+    }
+}
 // Fonction pour changer le thème CartoDB
 function changeCartoDBTheme(theme) {
   // Supprimer les couches existantes
@@ -109,5 +143,6 @@ var tileUrl = `https://{s}.basemaps.cartocdn.com/${theme}/{z}/{x}/{y}{r}.png`;
 L.tileLayer(tileUrl, {
   attribution: '&copy; <a href="https://carto.com/attributions">CartoDB</a> & <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 maxZoom: 19
-          }).addTo(map);
+}).addTo(map);
+    adjustTextColors(theme);
       }
