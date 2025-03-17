@@ -1,4 +1,22 @@
-﻿<div class="text-center pt-2 d-flex flex-column align-items-center"
+﻿@inject DatabaseService DatabaseService
+
+
+@code {
+    private List<Commune> communes = new();
+    private string? Depart;
+    private string? Etape1;
+    private string? Etape2;
+    private string? Etape3;
+    private string? Arrivee;
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        communes = await DatabaseService.GetCommunesAsync();
+    }
+}
+
+<div class="text-center pt-2 d-flex flex-column align-items-center"
      style="
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
@@ -8,40 +26,86 @@
     ">
 
     <div class="bg-secondary" style="width:80px;height:5px;border-radius:20px;"></div>
+
     <form class="d-flex flex-column gap-4 p-4 rounded-4">
+        <!-- Ville de départ -->
         <div class="d-flex gap-4 align-items-center">
             <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
                 <i class="bi bi-geo-alt-fill text-white m-0"></i>
             </div>
-            <input type="text" name="name" placeholder="Ville de départ" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
+            <select class="bg-transparent p-2 border border-secondary text-white w-100"
+                    style="border-radius:50px;"
+                    @bind="Depart">
+                <option value="">Ville de départ</option>
+                @foreach (var commune in communes)
+                {
+                    <option value="@commune.InseeCode">@commune.Label (@commune.ZipCode)</option>
+                }
+            </select>
         </div>
 
+        <!-- Étape 1 -->
         <div class="d-flex gap-4 align-items-center">
             <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
                 <i class="bi bi-circle-fill text-white m-0"></i>
             </div>
-            <input type="text" name="name" placeholder="Étape 1" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
+            <select class="bg-transparent p-2 border border-secondary text-white w-100"
+                    style="border-radius:50px;"
+                    @bind="Etape1">
+                <option value="">Étape 1</option>
+                @foreach (var commune in communes)
+                {
+                    <option value="@commune.InseeCode">@commune.Label (@commune.ZipCode)</option>
+                }
+            </select>
         </div>
 
+        <!-- Étape 2 -->
         <div class="d-flex gap-4 align-items-center">
             <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
                 <i class="bi bi-circle-fill text-white m-0"></i>
             </div>
-            <input type="text" name="name" placeholder="Étape 2" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
+            <select class="bg-transparent p-2 border border-secondary text-white w-100"
+                    style="border-radius:50px;"
+                    @bind="Etape2">
+                <option value="">Étape 2</option>
+                @foreach (var commune in communes)
+                {
+                    <option value="@commune.InseeCode">@commune.Label (@commune.ZipCode)</option>
+                }
+            </select>
         </div>
 
+        <!-- Étape 3 -->
         <div class="d-flex gap-4 align-items-center">
             <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
                 <i class="bi bi-circle-fill text-white m-0"></i>
             </div>
-            <input type="text" name="name" placeholder="Étape 3" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
+            <select class="bg-transparent p-2 border border-secondary text-white w-100"
+                    style="border-radius:50px;"
+                    @bind="Etape3">
+                <option value="">Étape 3</option>
+                @foreach (var commune in communes)
+                {
+                    <option value="@commune.InseeCode">@commune.Label (@commune.ZipCode)</option>
+                }
+            </select>
         </div>
 
+        <!-- Ville d'arrivée -->
         <div class="d-flex gap-4 align-items-center">
             <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px">
                 <i class="bi bi-flag-fill text-white m-0"></i>
             </div>
-            <input type="text" name="name" placeholder="Ville d'arrivée" class="bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px;">
+            <select class="bg-transparent p-2 border border-secondary text-white w-100"
+                    style="border-radius:50px;"
+                    @bind="Arrivee">
+                <option value="">Ville d'arrivée</option>
+                @foreach (var commune in communes)
+                {
+                    <option value="@commune.InseeCode">@commune.Label (@commune.ZipCode)</option>
+                }
+            </select>
         </div>
     </form>
 </div>
