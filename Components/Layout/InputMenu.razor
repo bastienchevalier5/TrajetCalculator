@@ -99,7 +99,7 @@
 
         // Filtrer les communes qui commencent par le texte saisi
         FilteredCommunes = AllCommunes
-            .Where(c => c.Label.StartsWith(searchText, StringComparison.OrdinalIgnoreCase))
+            .Where(c => c.Label.Contains(searchText, StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
 
