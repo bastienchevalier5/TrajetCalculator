@@ -1,51 +1,59 @@
-﻿<div class="text-center pt-2 d-flex flex-column align-items-center"
+﻿@page "/route-planner"
+
+<div class="text-center pt-2 d-flex flex-column align-items-center"
      style="
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         border-radius:20px;
+        max-width: 500px;
+        width: 100%;
     ">
     <div class="bg-secondary" style="width:80px;height:5px;border-radius:20px;"></div>
-    <form class="d-flex flex-column gap-0 p-4 rounded-4 position-relative">
-        <!-- Ligne pointillée verticale -->
-        <div class="position-absolute" style="left: 41px; top: 40px; bottom: 40px; width: 2px; border-left: 2px dashed #6c757d; z-index: 1;"></div>
+    <div class="route-container w-100 overflow-auto" style="max-height: 400px;">
+        <form class="d-flex flex-column gap-2 p-4 rounded-4 position-relative">
+            <!-- Ligne pointillée verticale -->
+            <div class="position-absolute" style="left: 41px; top: 40px; bottom: 40px; width: 2px; border-left: 2px dashed #6c757d; z-index: 1;"></div>
 
-        <div class="d-flex gap-4 align-items-center position-relative mb-4" style="z-index: 2;">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
-                <i class="bi bi-geo-alt-fill text-white m-0"></i>
+            <!-- Ville de départ -->
+            <div class="d-flex gap-4 align-items-center position-relative " style="z-index: 2;">
+                <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
+                    <i class="bi bi-geo-alt-fill text-white m-0"></i>
+                </div>
+                <input type="text" name="departure" placeholder="Ville de départ" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
             </div>
-            <input type="text" name="name" placeholder="Ville de départ" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
-        </div>
 
-        <div class="d-flex gap-4 align-items-center position-relative mb-4" style="z-index: 2;">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
-                <i class="bi bi-circle-fill text-white m-0"></i>
-            </div>
-            <input type="text" name="name" placeholder="Étape 1" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
-        </div>
+            <!-- Étapes intermédiaires générées dynamiquement -->
+            @foreach (var waypoint in Waypoints)
+            {
+                <div class="d-flex gap-4 align-items-center position-relative" style="z-index: 2;">
+                    <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
+                        <i class="bi bi-circle-fill text-white m-0"></i>
+                    </div>
+                    <input type="text" name="waypoint_@waypoint.Id" placeholder="Étape intermédiaire" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
+                    <button type="button" class="p-0 btn btn-sm text-danger bg-transparent border-0" @onclick="() => RemoveWaypoint(waypoint.Id)">
+                        <i class="bi bi-x-circle-fill m-0"></i>
+                    </button>
+                </div>
+            }
 
-        <div class="d-flex gap-4 align-items-center position-relative mb-4" style="z-index: 2;">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
-                <i class="bi bi-circle-fill text-white m-0"></i>
+            <!-- Bouton d'ajout d'étape -->
+            <div class="m-2" style="z-index: 2;">
+                <button type="button" class="bg-secondary rounded-circle" style="width:30px;height:30px;border:none" @onclick="AddWaypoint">
+                    <p class="text-white m-0 p-0">+</p>
+                </button>
             </div>
-            <input type="text" name="name" placeholder="Étape 2" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
-        </div>
 
-        <div class="d-flex gap-4 align-items-center position-relative mb-4" style="z-index: 2;">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
-                <i class="bi bi-circle-fill text-white m-0"></i>
+            <!-- Ville d'arrivée -->
+            <div class="d-flex gap-4 align-items-center position-relative" style="z-index: 2;">
+                <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
+                    <i class="bi bi-flag-fill text-white m-0"></i>
+                </div>
+                <input type="text" name="arrival" placeholder="Ville d'arrivée" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
             </div>
-            <input type="text" name="name" placeholder="Étape 3" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
-        </div>
-
-        <div class="d-flex gap-4 align-items-center position-relative" style="z-index: 2;">
-            <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
-                <i class="bi bi-flag-fill text-white m-0"></i>
-            </div>
-            <input type="text" name="name" placeholder="Ville d'arrivée" class="input-route bg-transparent p-2 border border-secondary text-white w-100" style="border-radius:50px; transition: all 0.3s ease;">
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 
 <style>
@@ -68,4 +76,55 @@
     .input-route:not(:placeholder-shown) {
         border-color: #0d6efd !important;
     }
+
+    /* Style personnalisé pour la scrollbar */
+    .route-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .route-container::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    .route-container::-webkit-scrollbar-thumb {
+        background: rgba(108, 117, 125, 0.5);
+        border-radius: 10px;
+    }
+
+        .route-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(108, 117, 125, 0.8);
+        }
 </style>
+
+@code {
+    // Classe pour représenter une étape
+    private class Waypoint
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    // Liste des étapes
+    private List<Waypoint> Waypoints { get; set; } = new List<Waypoint>();
+
+    // Compteur pour générer des ID uniques
+    private int waypointCounter = 1;
+
+    // Ajouter une nouvelle étape
+    private void AddWaypoint()
+    {
+        Waypoints.Add(new Waypoint { Id = waypointCounter });
+        waypointCounter++;
+    }
+
+    // Supprimer une étape existante
+    private void RemoveWaypoint(int id)
+    {
+        var waypoint = Waypoints.FirstOrDefault(w => w.Id == id);
+        if (waypoint != null)
+        {
+            Waypoints.Remove(waypoint);
+        }
+    }
+}
