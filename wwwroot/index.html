@@ -11,6 +11,35 @@
     <link rel="icon" type="image/png" href="favicon.png" />
     <script src="draggable.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        function initMap() {
+            var map = L.map('map').setView([47.6062, -122.3321], 13);  // Position initiale de la carte
+
+            // Ajouter le fond de carte CartoDB Dark All (moins sombre que Dark Matter)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://carto.com/attributions">CartoDB</a> & <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 19
+            }).addTo(map);
+        }
+    </script>
+    <style>
+        html, body {
+            height: 100%; 
+            margin: 0; 
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
 </head>
 
 <body>
