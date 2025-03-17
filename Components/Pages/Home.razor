@@ -1,16 +1,14 @@
 ﻿@page "/"
-
 @inject IJSRuntime JSRuntime
 
 <div id="map" style="height: 100vh; width: 100vw;"></div>
 
 @code {
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Initialisation de la carte Leaflet
-            JSRuntime.InvokeVoidAsync("initMap");
+            await JSRuntime.InvokeVoidAsync("initMap");
         }
     }
 }

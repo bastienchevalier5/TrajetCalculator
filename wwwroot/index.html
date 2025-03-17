@@ -11,19 +11,102 @@
     <link rel="icon" type="image/png" href="favicon.png" />
     <script src="draggable.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
     <script>
-        function initMap() {
-            var map = L.map('map').setView([47.6062, -122.3321], 13);  // Position initiale de la carte
+        // Variables globales
+        var map;
 
-            // Ajouter le fond de carte CartoDB Dark All (moins sombre que Dark Matter)
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+        // Fonction pour initialiser la carte
+        function initMap() {
+            // Vérifier si l'élément map existe
+            if (!document.getElementById('map')) {
+                console.error("Element with id 'map' not found");
+                return;
+            }
+
+            // Créer la carte centrée sur Seattle
+            map = L.map('map').setView([47.6062, -122.3321], 13);
+
+            // Ajouter la couche de tuiles (thème sombre CartoDB)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://carto.com/attributions">CartoDB</a> & <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Ajouter un sélecteur de thème CartoDB simple
+            addCartoDBThemeSelector();
+        }
+
+        // Fonction pour ajouter un sélecteur de thème CartoDB
+        function addCartoDBThemeSelector() {
+            // Créer un div pour le sélecteur
+            var selectorDiv = document.createElement('div');
+            selectorDiv.style.position = 'absolute';
+            selectorDiv.style.bottom = '10px';
+            selectorDiv.style.left = '10px';
+            selectorDiv.style.zIndex = '1000';
+            selectorDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+            selectorDiv.style.padding = '5px';
+            selectorDiv.style.borderRadius = '4px';
+
+            // Créer le sélecteur
+            var select = document.createElement('select');
+            select.style.backgroundColor = '#333';
+            select.style.color = 'white';
+            select.style.border = '1px solid #555';
+            select.style.padding = '2px';
+            select.style.fontSize = '12px';
+
+            // Ajouter les options de thème CartoDB uniquement
+            var themes = {
+                'dark_all': 'CartoDB Dark',
+                'dark_nolabels': 'CartoDB Dark No Labels',
+                'light_all': 'CartoDB Light',
+                'light_nolabels': 'CartoDB Light No Labels',
+                'rastertiles/voyager_nolabels': 'CartoDB Voyager No Labels',
+                'rastertiles/voyager': 'CartoDB Voyager',
+                'rastertiles/voyager_labels_under': 'CartoDB Voyager Labels Under'
+            };
+
+            for (var value in themes) {
+                var option = document.createElement('option');
+                option.value = value;
+                option.text = themes[value];
+                select.appendChild(option);
+            }
+
+            // Définir l'option par défaut sur "dark_all"
+            select.value = 'dark_all';
+
+            // Ajouter l'événement de changement
+            select.addEventListener('change', function () {
+                changeCartoDBTheme(this.value);
+            });
+
+            // Ajouter le sélecteur au div
+            selectorDiv.appendChild(select);
+
+            // Ajouter le div à la page
+            document.body.appendChild(selectorDiv);
+        }
+
+        // Fonction pour changer le thème CartoDB
+        function changeCartoDBTheme(theme) {
+            // Supprimer les couches existantes
+            map.eachLayer(function (layer) {
+                if (layer instanceof L.TileLayer) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Construire l'URL pour CartoDB
+            var tileUrl = `https://{s}.basemaps.cartocdn.com/${theme}/{z}/{x}/{y}{r}.png`;
+
+            // Ajouter la nouvelle couche
+            L.tileLayer(tileUrl, {
                 attribution: '&copy; <a href="https://carto.com/attributions">CartoDB</a> & <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
                 maxZoom: 19
             }).addTo(map);
@@ -31,8 +114,8 @@
     </script>
     <style>
         html, body {
-            height: 100%; 
-            margin: 0; 
+            height: 100%;
+            margin: 0;
         }
 
         #map {
@@ -41,19 +124,13 @@
         }
     </style>
 </head>
-
 <body>
-
     <div id="app">Loading...</div>
-
     <div id="blazor-error-ui">
         An unhandled error has occurred.
         <a href="" class="reload">Reload</a>
         <a class="dismiss">🗙</a>
     </div>
-
     <script src="_framework/blazor.webview.js" autostart="false"></script>
-
 </body>
-
 </html>
