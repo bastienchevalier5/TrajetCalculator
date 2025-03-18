@@ -161,4 +161,59 @@ L.tileLayer(tileUrl, {
 maxZoom: 19
 }).addTo(map);
     adjustTextColors(theme);
-      }
+}
+
+function addPins(villes) {
+    if (!map) {
+        console.error("La carte n'est pas encore initialisée !");
+        return;
+    }
+
+    var startPin = L.divIcon({
+        className: 'start-pin',
+        html: '<div class="pin-content"></div>',
+        iconSize: [20, 20], // Taille de l'icône
+        iconAnchor: [10, 10], // Point d'ancrage
+        popupAnchor: [0, -35] // Position du popup
+    });
+
+    var endPin = L.divIcon({
+        className: 'end-pin',
+        html: '<div class="pin-content"><i class="bi bi-flag-fill text-white m-0"></i></div>',
+        iconSize: [20, 20], // Taille de l'icône
+        iconAnchor: [10, 10], // Point d'ancrage
+        popupAnchor: [0, -35] // Position du popup
+    });
+
+    var middlePin = L.divIcon({
+        className: 'middle-pin',
+        html: '<div class="pin-content"></div>',
+        iconSize: [10, 10], // Taille de l'icône
+        iconAnchor: [5, 5], // Point d'ancrage
+        popupAnchor: [0, -35] // Position du popup
+    });
+
+    
+
+    map.eachLayer(function (layer) {
+        if (layer instanceof L.Marker) {
+            map.removeLayer(layer);
+        }
+    });
+
+    villes.forEach((ville, index) => {
+        let iconType;
+        if (index === 0) {
+            iconType = startPin;  
+        } else if (index === villes.length - 1) {
+            iconType = endPin;   
+        } else {
+            iconType = middlePin; 
+        }
+
+        L.marker([ville.latitude, ville.longitude], { icon: iconType })
+            .addTo(map)
+            .bindPopup(ville.label);
+    });
+}
+
