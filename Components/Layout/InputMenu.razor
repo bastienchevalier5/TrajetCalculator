@@ -88,7 +88,6 @@ style="
             <div class="mt-3">
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary flex-grow-1">Calculer l'itinéraire</button>
-                    <button type="button" class="btn btn-secondary" @onclick="TestConnection">Test DB</button>
                 </div>
             </div>
         </EditForm>
@@ -106,17 +105,6 @@ style="
             <option value="@commune.Label (@commune.ZipCode)" data-insee="@commune.InseeCode"></option>
         }
     </datalist>
-
-    <!-- Informations de débogage -->
-    <div class="mt-3 p-2 w-100 border border-secondary rounded-3 text-white">
-        <h5>Informations de sélection:</h5>
-        <ul class="text-start">
-            <li>Départ ID: @SelectedDepartureId, Label: @SelectedDepartureLabel</li>
-            <li>Arrivée ID: @SelectedArrivalId, Label: @SelectedArrivalLabel</li>
-            <li>Points intermédiaires: @Waypoints.Count</li>
-            <li>Communes chargées: @(AllCommunes?.Count ?? 0)</li>
-        </ul>
-    </div>
 
     <!-- Affichage des résultats de l'itinéraire -->
     @if (CalculatedRoute != null && CalculatedRoute.Any())
@@ -328,24 +316,6 @@ style="
         }
 
         StateHasChanged(); // Force UI refresh
-    }
-
-    private async Task TestConnection()
-    {
-        try
-        {
-            var communes = await DatabaseService.GetCommunesAsync();
-            AllCommunes = communes.OrderBy(c => c.Label).ToList();
-            FilteredCommunes = AllCommunes;
-            ErrorMessage = $"Connexion OK - {communes.Count} communes chargées";
-            HasError = false;
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Erreur de connexion : {ex.Message}";
-            HasError = true;
-        }
-        StateHasChanged();
     }
 
     private async Task<double> CalculateRouteTotalDistance()
