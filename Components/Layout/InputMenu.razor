@@ -24,7 +24,7 @@
                 <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
                     <i class="bi bi-geo-alt-fill text-white m-0"></i>
                 </div>
-                <input type="text" @bind="Departure" @oninput="FilterCommunes"
+                <input type="text" @bind="SelectedDepartureId" @oninput="FilterCommunes"
                        placeholder="Ville de départ"
                        list="communesList"
                        class="input-route bg-transparent p-2 border border-secondary text-white w-100"
@@ -61,7 +61,7 @@
                 <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
                     <i class="bi bi-flag-fill text-white m-0"></i>
                 </div>
-                <input type="text" @bind="Arrival" @oninput="FilterCommunes"
+                <input type="text" @bind="SelectedArrivalId" @oninput="FilterCommunes"
                        placeholder="Ville d'arrivée"
                        list="communesList"
                        class="input-route bg-transparent p-2 border border-secondary text-white w-100"
@@ -80,8 +80,8 @@
 </div>
 
 @code {
-    private string Departure { get; set; } = "";
-    private string Arrival { get; set; } = "";
+    private int? SelectedDepartureId;
+    private int? SelectedArrivalId;
     private List<Commune> AllCommunes = new();
     private List<Commune> FilteredCommunes = new();
     private List<Waypoint> Waypoints = new();
@@ -117,6 +117,158 @@
     {
         public int Id { get; set; }
         public string Label { get; set; } = "";
+    }
+
+    private async Task LoadFilteredCommunes()
+    {
+        FilteredCommunes.Clear();
+        if (SelectedDepartureId.HasValue)
+            FilteredCommunes.Add(await DatabaseService.GetCommuneByIdAsync(SelectedDepartureId.Value));
+
+        foreach (var waypoint in Waypoints)
+        {
+            if (waypoint.Id != 0)
+                FilteredCommunes.Add(await DatabaseService.GetCommuneByIdAsync(waypoint.Id));
+        }
+
+        if (SelectedArrivalId.HasValue)
+            FilteredCommunes.Add(await DatabaseService.GetCommuneByIdAsync(SelectedArrivalId.Value));
+    }
+
+    public async Task<List<Commune>> LoadCitiesAsync()
+    {
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptions<TrajetCalculatorDbContext>();
+        using var context = new TrajetCalculatorDbContext(options);
+        return await DatabaseService.GetCommunesAsync();
+    }
+
+    private async Task<List<string>> CalculItineraire(Commune Departure, List<Commune> FilteredCommunes, Commune Arrival)
+    {
+        if (!SelectedDepartureId.HasValue || !SelectedArrivalId.HasValue) return new List<string> { "Veuillez sélectionner une ville de départ et une ville d'arrivée." };
+
+        var departure = await DatabaseService.GetCommuneByIdAsync(SelectedDepartureId.Value);
+        var arrival = await DatabaseService.GetCommuneByIdAsync(SelectedArrivalId.Value);
+        var waypoints = new List<Commune>();
+
+        foreach (var waypoint in Waypoints)
+        {
+            if (waypoint.Id != 0)
+                waypoints.Add(await DatabaseService.GetCommuneByIdAsync(waypoint.Id));
+        }
+
+        var shortestPath = await FindOptimalRoute(AllCommunes, departure.Label, waypoints.Select(v => v.Label).ToList(), arrival.Label);
+
+        return shortestPath;
+    }
+
+    public async Task<List<string>> FindOptimalRoute(List<Commune> communes, string start, List<string> required, string end)
+    {
+        double minDistance = double.MaxValue;
+        List<string> ?bestRoute = null;
+
+        foreach (var perm in GetPermutations(required, required.Count))
+        {
+            List<string> route = new List<string> { start };
+            route.AddRange(perm);
+            route.Add(end);
+
+            double totalDistance = 0;
+            bool validRoute = true;
+
+            for (int i = 0; i < route.Count - 1; i++)
+            {
+                var subPath = Dijkstra(communes, route[i], route[i + 1]);
+                if (subPath.Count == 0)
+                {
+                    validRoute = false;
+                    break;
+                }
+                totalDistance += subPath.Count - 1;
+            }
+
+            if (validRoute && totalDistance < minDistance)
+            {
+                minDistance = totalDistance;
+                bestRoute = new List<string>(route);
+            }
+        }
+
+        return bestRoute ?? new List<string>();
+    }
+
+    public List<string> Dijkstra(List<Commune> communes, string start, string end)
+    {
+        var distances = new Dictionary<string, double>();
+        var previous = new Dictionary<string, string>();
+        var pq = new SortedSet<(double, string)>();
+
+        foreach (var commune in communes)
+        {
+            distances[commune.Label] = double.MaxValue;
+        }
+        distances[start] = 0;
+        pq.Add((0, start));
+
+        while (pq.Count > 0)
+        {
+            var (dist, current) = pq.Min;
+            pq.Remove(pq.Min);
+
+            if (current == end) break;
+
+            var currentCommune = communes.First(v => v.Label == current);
+
+            foreach (var neighbor in communes)
+            {
+                if (neighbor.Label == current) continue;
+
+                double newDist = dist + CalculDistanceVille(currentCommune, neighbor);
+                if (newDist < distances[neighbor.Label])
+                {
+                    pq.Remove((distances[neighbor.Label], neighbor.Label));
+                    distances[neighbor.Label] = newDist;
+                    previous[neighbor.Label] = current;
+                    pq.Add((newDist, neighbor.Label));
+                }
+            }
+        }
+
+        return ReconstructPath(previous, start, end);
+    }
+
+    private List<string> ReconstructPath(Dictionary<string, string> previous, string start, string end)
+    {
+        var path = new List<string>();
+        for (string at = end; at != null; at = previous.GetValueOrDefault(at))
+        {
+            path.Add(at);
+        }
+        path.Reverse();
+        return path.Count > 1 ? path : new List<string>();
+    }
+
+    static IEnumerable<IEnumerable<T>> GetPermutations<T>(IEnumerable<T> list, int length)
+    {
+        if (length == 1) return list.Select(t => new T[] { t });
+
+        return GetPermutations(list, length - 1)
+            .SelectMany(t => list.Where(e => !t.Contains(e)),
+                        (t1, t2) => t1.Concat(new T[] { t2 }));
+    }
+
+    private double CalculDistanceVille(Commune Departure, Commune Arrival)
+    {
+        const double kmPerDegree = 111.0;
+
+        double deltaLatitude = (double)(Arrival.Latitude - Departure.Latitude);
+        double deltaLongitude = (double)(Arrival.Longitude - Departure.Longitude);
+
+        double averageLatitudeRad = (Math.PI / 180) * ((double)(Departure.Latitude + Arrival.Latitude) / 2.0);
+
+        double deltaX = kmPerDegree * deltaLatitude;
+        double deltaY = kmPerDegree * Math.Cos(averageLatitudeRad) * deltaLongitude;
+
+        return Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
     }
 }
 
