@@ -4,7 +4,7 @@
 @page "/route-planner"
 
 <div class="text-center pt-2 d-flex flex-column align-items-center"
-     style="
+style="
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -12,7 +12,7 @@
         border-radius:20px;
         max-width: 500px;
         width: 100%;
-    ">
+">
     <div class="bg-secondary" style="width:80px;height:5px;border-radius:20px;"></div>
     <div class="route-container w-100 overflow-auto" style="max-height: 400px;">
         <EditForm Model="@commune" class="d-flex flex-column gap-2 p-4 rounded-4 position-relative" OnValidSubmit="OnSubmit">
@@ -25,13 +25,13 @@
                     <i class="bi bi-geo-alt-fill text-white m-0"></i>
                 </div>
                 <input type="text" id="departureInput"
-                       @bind-value="SelectedDepartureLabel"
-                       @bind-value:event="oninput"
-                       @onchange="e => SelectDepartureCommune(e.Value.ToString())"
-                       placeholder="Ville de départ"
-                       list="communesList"
-                       class="input-route bg-transparent p-2 border border-secondary text-white w-100"
-                       style="border-radius:50px; transition: all 0.3s ease;" />
+                @bind-value="SelectedDepartureLabel"
+                @bind-value:event="oninput"
+                @onchange="e => SelectDepartureCommune(e.Value.ToString())"
+                placeholder="Ville de départ"
+                list="communesList"
+                class="input-route bg-transparent p-2 border border-secondary text-white w-100"
+                style="border-radius:50px; transition: all 0.3s ease;" />
 
             </div>
 
@@ -43,18 +43,18 @@
                         <i class="bi bi-circle-fill text-white m-0"></i>
                     </div>
                     <input type="text" id="waypointInput-@waypoint.Id"
-                           @bind-value="waypoint.Label"
-                           @bind-value:event="oninput"
-                           @onchange="e => SelectWaypointCommune(waypoint.Id, e.Value.ToString())"
-                           placeholder="Étape intermédiaire"
-                           list="communesList"
-                           class="input-route bg-transparent p-2 border border-secondary text-white w-100"
-                           style="border-radius:50px; transition: all 0.3s ease;" />
+                    @bind-value="waypoint.Label"
+                    @bind-value:event="oninput"
+                    @onchange="e => SelectWaypointCommune(waypoint.Id, e.Value.ToString())"
+                    placeholder="Étape intermédiaire"
+                    list="communesList"
+                    class="input-route bg-transparent p-2 border border-secondary text-white w-100"
+                    style="border-radius:50px; transition: all 0.3s ease;" />
 
                     <button type="button" class="p-0 btn btn-sm bg-transparent border-0 position-relative"
-                            @onclick="() => RemoveWaypoint(waypoint.Id)"
-                            style="border: 2px solid red; border-radius: 50%; transition: box-shadow 0.3s ease;"
-                            onfocus="this.blur();">
+                    @onclick="() => RemoveWaypoint(waypoint.Id)"
+                    style="border: 2px solid red; border-radius: 50%; transition: box-shadow 0.3s ease;"
+                    onfocus="this.blur();">
                         <i class="bi bi-x-circle-fill text-danger m-0"></i>
                     </button>
                 </div>
@@ -74,13 +74,13 @@
                     <i class="bi bi-flag-fill text-white m-0"></i>
                 </div>
                 <input type="text" id="arrivalInput"
-                       @bind-value="SelectedArrivalLabel"
-                       @bind-value:event="oninput"
-                       @onchange="e => SelectArrivalCommune(e.Value.ToString())"
-                       placeholder="Ville d'arrivée"
-                       list="communesList"
-                       class="input-route bg-transparent p-2 border border-secondary text-white w-100"
-                       style="border-radius:50px; transition: all 0.3s ease;" />
+                @bind-value="SelectedArrivalLabel"
+                @bind-value:event="oninput"
+                @onchange="e => SelectArrivalCommune(e.Value.ToString())"
+                placeholder="Ville d'arrivée"
+                list="communesList"
+                class="input-route bg-transparent p-2 border border-secondary text-white w-100"
+                style="border-radius:50px; transition: all 0.3s ease;" />
 
             </div>
 
@@ -148,38 +148,38 @@
 
 <script>
     function updateInseeCode(inputId, hiddenId) {
-        let input = document.getElementById(inputId);
-        let hiddenInput = document.getElementById(hiddenId);
-        let datalist = document.getElementById('communesList');
+    let input = document.getElementById(inputId);
+    let hiddenInput = document.getElementById(hiddenId);
+    let datalist = document.getElementById('communesList');
 
-        if (input && hiddenInput && datalist) {
-            let found = false;
-            for (let option of datalist.options) {
-                if (option.value === input.value) {
-                    hiddenInput.value = option.getAttribute('data-insee'); // Stocke le code INSEE
-                    found = true;
-                    break;
-                }
-            }
+    if (input && hiddenInput && datalist) {
+    let found = false;
+    for (let option of datalist.options) {
+    if (option.value === input.value) {
+    hiddenInput.value = option.getAttribute('data-insee'); // Stocke le code INSEE
+    found = true;
+    break;
+    }
+    }
 
-            // Si aucune correspondance exacte, chercher une correspondance partielle
-            if (!found) {
-                const inputValue = input.value.toLowerCase();
-                for (let option of datalist.options) {
-                    const optionValue = option.value.toLowerCase();
-                    if (optionValue.includes(inputValue) || inputValue.includes(optionValue)) {
-                        hiddenInput.value = option.getAttribute('data-insee');
-                        input.value = option.value; // On corrige aussi la valeur affichée
-                        found = true;
-                        break;
-                    }
-                }
-            }
+    // Si aucune correspondance exacte, chercher une correspondance partielle
+    if (!found) {
+    const inputValue = input.value.toLowerCase();
+    for (let option of datalist.options) {
+    const optionValue = option.value.toLowerCase();
+    if (optionValue.includes(inputValue) || inputValue.includes(optionValue)) {
+    hiddenInput.value = option.getAttribute('data-insee');
+    input.value = option.value; // On corrige aussi la valeur affichée
+    found = true;
+    break;
+    }
+    }
+    }
 
-            if (!found) {
-                hiddenInput.value = ''; // Réinitialise si la valeur entrée ne correspond pas
-            }
-        }
+    if (!found) {
+    hiddenInput.value = ''; // Réinitialise si la valeur entrée ne correspond pas
+    }
+    }
     }
 </script>
 
@@ -413,41 +413,24 @@
         public string Label { get; set; } = "";
         public string? InseeCode { get; set; }
     }
-
-    private async Task<List<string>> CalculItineraire(string departureId, List<string> waypointIds, string arrivalId)
+    private async Task<List<string>> CalculItineraire(string Departure, List<string> Waypoints, string Arrival)
     {
-        try
+        if (!SelectedDepartureId.HasValue || !SelectedArrivalId.HasValue) return new List<string> { "Veuillez sélectionner une ville de départ et une ville d'arrivée." };
+
+        var AllCommunes = await DatabaseService.GetCommunesAsync();
+        var departure = await DatabaseService.GetCommuneByIdAsync(Departure);
+        var arrival = await DatabaseService.GetCommuneByIdAsync(Arrival);
+        var waypoints = new List<Commune>();
+
+        foreach (var waypoint in Waypoints)
         {
-            var departure = await DatabaseService.GetCommuneByIdAsync(departureId);
-            var arrival = await DatabaseService.GetCommuneByIdAsync(arrivalId);
-
-            if (departure == null || arrival == null)
-                return new List<string>();
-
-            var waypoints = new List<Commune>();
-
-            foreach (var waypointId in waypointIds)
-            {
-                var waypoint = await DatabaseService.GetCommuneByIdAsync(waypointId);
-                if (waypoint != null)
-                    waypoints.Add(waypoint);
-            }
-
-            // Si pas de points intermédiaires, on calcule direct de départ à arrivée
-            if (waypoints.Count == 0)
-            {
-                return Dijkstra(AllCommunes, departure.Label, arrival.Label);
-            }
-
-            // Sinon on cherche le chemin optimal
-            var shortestPath = await FindOptimalRoute(AllCommunes, departure.Label, waypoints.Select(v => v.Label).ToList(), arrival.Label);
-            return shortestPath;
+            if (waypoint != 0)
+                waypoints.Add(await DatabaseService.GetCommuneByIdAsync(waypoint));
         }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Erreur dans CalculItineraire: {ex.Message}";
-            return new List<string>();
-        }
+
+        var shortestPath = await FindOptimalRoute(AllCommunes, departure.Label, waypoints.Select(v => v.Label).ToList(), arrival.Label);
+
+        return shortestPath;
     }
 
     public async Task<List<string>> FindOptimalRoute(List<Commune> communes, string start, List<string> required, string end)
