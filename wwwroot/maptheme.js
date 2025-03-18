@@ -56,9 +56,39 @@ function initMap() {
         popupAnchor: [0, -35] // Position du popup
     });
 
-    L.marker([48.8566, 2.3522], { icon: middlePin }).addTo(map)
+    L.marker([48.8566, 2.3522], { icon: startPin }).addTo(map)
         .bindPopup("Paris")
         .openPopup();
+
+    L.marker([45.7640, 4.8357], { icon: middlePin }).addTo(map)
+        .bindPopup("Lyon")
+        .openPopup();
+
+    L.marker([43.2965, 5.3698], { icon: middlePin }).addTo(map)
+        .bindPopup("Marseille")
+        .openPopup();
+
+    L.marker([44.8378, -0.5792], { icon: endPin }).addTo(map)
+        .bindPopup("Bordeaux")
+        .openPopup();
+
+
+    // Ajouter un polyline (chemin) reliant les 4 points
+    var latlngs = [
+        [48.8566, 2.3522], // Paris
+        [45.7640, 4.8357], // Lyon
+        [43.2965, 5.3698], // Marseille
+        [44.8378, -0.5792] // Bordeaux
+    ];
+
+    var path = L.polyline(latlngs, {
+        color: '#0d6efd',
+        weight: 4,
+        opacity: 1,
+    }).addTo(map);
+
+    // Centrer la carte sur le chemin
+    map.fitBounds(path.getBounds());
 
   // Ajouter un sélecteur de thème CartoDB simple
     addCartoDBThemeSelector();
