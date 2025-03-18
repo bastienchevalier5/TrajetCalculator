@@ -81,11 +81,56 @@ function initMap() {
         [44.8378, -0.5792] // Bordeaux
     ];
 
+    // Pour le path existant, modifiez-le pour ajouter l'effet néon
     var path = L.polyline(latlngs, {
-        color: '#0d6efd',
-        weight: 4,
+        color: '#0d6efd', // Couleur cyan néon
+        weight: 3,        // Augmenter l'épaisseur
         opacity: 1,
+        className: 'neon-path' // Ajouter une classe pour pouvoir appliquer des styles CSS
     }).addTo(map);
+
+    // Ajouter un second polyline légèrement plus large pour l'effet de lueur
+    var glowPath = L.polyline(latlngs, {
+        color: '#0d6efd',
+        weight: 6,       // Plus large pour créer l'effet de lueur
+        opacity: 0.3,     // Semi-transparent
+        className: 'neon-glow'
+    }).addTo(map);
+
+    // Placer ce glowPath en dessous du path principal
+    glowPath.bringToBack();
+
+    // Ajouter du CSS pour l'animation et le style néon (à ajouter dans votre fichier CSS ou dans une balise style)
+    var style = document.createElement('style');
+    style.innerHTML = `
+.neon-path {
+    filter: drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 8px #00ffff);
+    animation: neonPulse 1.5s infinite alternate;
+}
+
+.neon-glow {
+    filter: blur(4px);
+    animation: neonGlowPulse 1.5s infinite alternate;
+}
+
+@keyframes neonPulse {
+    from { filter: drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 8px #00ffff); }
+    to { filter: drop-shadow(0 0 10px #00ffff) drop-shadow(0 0 15px #00ffff); }
+}
+
+@keyframes neonGlowPulse {
+    from { opacity: 0.2; }
+    to { opacity: 0.4; }
+}
+
+/* Style pour les marqueurs également */
+.start-pin .pin-content, .end-pin .pin-content, .middle-pin .pin-content {
+    box-shadow: 0 0 10px #00ffff, 0 0 15px #00ffff;
+    border-radius: 50%;
+    background-color: #00ffff;
+}
+`;
+    document.head.appendChild(style);
 
     // Centrer la carte sur le chemin
     map.fitBounds(path.getBounds());
