@@ -415,20 +415,22 @@ style="
     }
     private async Task<List<string>> CalculItineraire(string Departure, List<string> Waypoints, string Arrival)
     {
-        if (!SelectedDepartureId.HasValue || !SelectedArrivalId.HasValue) return new List<string> { "Veuillez sélectionner une ville de départ et une ville d'arrivée." };
+        if (SelectedDepartureId == null || SelectedArrivalId == null) return new List<string> { "Veuillez sélectionner une ville de départ et une ville d'arrivée." };
 
-        var AllCommunes = await DatabaseService.GetCommunesAsync();
         var departure = await DatabaseService.GetCommuneByIdAsync(Departure);
         var arrival = await DatabaseService.GetCommuneByIdAsync(Arrival);
         var waypoints = new List<Commune>();
 
         foreach (var waypoint in Waypoints)
         {
-            if (waypoint != 0)
+            if (waypoint != null)
                 waypoints.Add(await DatabaseService.GetCommuneByIdAsync(waypoint));
         }
 
-        var shortestPath = await FindOptimalRoute(AllCommunes, departure.Label, waypoints.Select(v => v.Label).ToList(), arrival.Label);
+        var selectedCommunes = new List<Commune> { departure, arrival };
+        selectedCommunes.AddRange(waypoints);
+
+        var shortestPath = await FindOptimalRoute(selectedCommunes, departure.Label, waypoints.Select(v => v.Label).ToList(), arrival.Label);
 
         return shortestPath;
     }
@@ -543,13 +545,12 @@ style="
         }
     }
 
-    public List<string> Dijkstra(List<Commune> communes, string start, string end)
+    public List<string> Dijkstra(List<Commune> selectedCommunes, string start, string end)
     {
         try
         {
-            // Vérifier que les villes existent dans la liste
-            var startCommune = communes.FirstOrDefault(c => c.Label == start);
-            var endCommune = communes.FirstOrDefault(c => c.Label == end);
+            var startCommune = selectedCommunes.FirstOrDefault(c => c.Label == start);
+            var endCommune = selectedCommunes.FirstOrDefault(c => c.Label == end);
 
             if (startCommune == null || endCommune == null)
             {
@@ -560,7 +561,7 @@ style="
             var previous = new Dictionary<string, string>();
             var pq = new SortedSet<(double, string)>();
 
-            foreach (var commune in communes)
+            foreach (var commune in selectedCommunes)
             {
                 distances[commune.Label] = double.MaxValue;
             }
@@ -575,21 +576,16 @@ style="
 
                 if (current == end) break;
 
-                var currentCommune = communes.FirstOrDefault(v => v.Label == current);
+                var currentCommune = selectedCommunes.FirstOrDefault(v => v.Label == current);
                 if (currentCommune == null) continue;
 
-                // Pour plus d'efficacité, on ne considère que les communes dans un certain rayon
-                var nearbyCommunes = communes.Where(c =>
-                    CalculDistanceVille(currentCommune, c) < 200 && // Limite de distance en km
-                    c.Label != current
-                ).ToList();
-
-                foreach (var neighbor in nearbyCommunes)
+                foreach (var neighbor in selectedCommunes)
                 {
+                    if (neighbor.Label == current) continue;
+
                     double newDist = dist + CalculDistanceVille(currentCommune, neighbor);
                     if (newDist < distances[neighbor.Label])
                     {
-                        // S'il est déjà dans la file, on le retire
                         var oldEntry = pq.FirstOrDefault(p => p.Item2 == neighbor.Label);
                         if (oldEntry.Item2 != null)
                         {
@@ -603,8 +599,7 @@ style="
                 }
             }
 
-            var path = ReconstructPath(previous, start, end);
-            return path;
+            return ReconstructPath(previous, start, end);
         }
         catch (Exception ex)
         {
