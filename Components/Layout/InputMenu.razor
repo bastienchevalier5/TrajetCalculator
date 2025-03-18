@@ -514,17 +514,18 @@ style="
         return shortestPath;
     }
 
-    public async Task<List<string>> FindOptimalRoute(List<Commune> communes, string start, List<string> required, string end)
+    public async Task<List<string>> FindOptimalRoute(List<Commune> communes, string start, List<string> waypoints, string end)
     {
-        if (required.Count == 0)
+        if (waypoints.Count == 0)
         {
             return Dijkstra(communes, start, end);
         }
 
         double minDistance = double.MaxValue;
-        List<string>? bestRoute = null;
+        List<string> bestRoute = null;
 
-        var allPermutations = GetPermutations(required, required.Count).ToList();
+        // Generate all possible orders of waypoints
+        var allPermutations = GetPermutations(waypoints, waypoints.Count).ToList();
 
         foreach (var perm in allPermutations)
         {
@@ -533,8 +534,10 @@ style="
             route.Add(end);
 
             double totalDistance = 0;
+            List<string> currentPath = new List<string>();
             bool validRoute = true;
 
+            // Compute path for each segment
             for (int i = 0; i < route.Count - 1; i++)
             {
                 var subPath = Dijkstra(communes, route[i], route[i + 1]);
@@ -544,52 +547,20 @@ style="
                     break;
                 }
 
-                if (i > 0 && subPath.Count > 1)
-                {
-                    subPath.RemoveAt(0);
-                }
+                if (i > 0) subPath.RemoveAt(0);
 
-                if (i == 0)
-                {
-                    totalDistance += subPath.Count - 1;
-                }
-                else
-                {
-                    totalDistance += subPath.Count;
-                }
+                currentPath.AddRange(subPath);
+                totalDistance += subPath.Count - 1;
             }
 
             if (validRoute && totalDistance < minDistance)
             {
                 minDistance = totalDistance;
-                bestRoute = new List<string> { start };
-
-                for (int i = 0; i < perm.Count(); i++)
-                {
-                    var current = perm.ElementAt(i);
-                    var subPath = Dijkstra(communes, i == 0 ? start : perm.ElementAt(i - 1), current);
-
-                    if (subPath.Count > 1)
-                    {
-                        for (int j = 1; j < subPath.Count; j++)
-                        {
-                            bestRoute.Add(subPath[j]);
-                        }
-                    }
-                }
-
-                var finalPath = Dijkstra(communes, perm.Last(), end);
-                if (finalPath.Count > 1)
-                {
-                    for (int j = 1; j < finalPath.Count; j++)
-                    {
-                        bestRoute.Add(finalPath[j]);
-                    }
-                }
+                bestRoute = new List<string>(currentPath);
             }
         }
 
-        return bestRoute ?? new List<string>();
+        return bestRoute ?? new List<string> { "No valid route found" };
     }
 
     public List<string> Dijkstra(List<Commune> selectedCommunes, string start, string end)
@@ -680,13 +651,13 @@ style="
 
     static IEnumerable<IEnumerable<T>> GetPermutations<T>(IEnumerable<T> list, int length)
     {
-        if (length == 1) return list.Select(t => new T[] { t });
+        if (length == 1)
+            return list.Select(t => new T[] { t });
 
-        if (list.Count() <= 1) return new List<IEnumerable<T>> { list };
-
-        return GetPermutations(list, length - 1)
-            .SelectMany(t => list.Where(e => !t.Contains(e)),
-                        (t1, t2) => t1.Concat(new T[] { t2 }));
+        return list.SelectMany(
+            (e, i) => GetPermutations(list.Where((_, index) => index != i), length - 1)
+                .Select(t => new T[] { e }.Concat(t))
+        );
     }
 
     private double CalculDistanceVille(Commune Departure, Commune Arrival)
