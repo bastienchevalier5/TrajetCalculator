@@ -18,7 +18,7 @@ namespace TrajetCalculator
 
             builder.Services.AddMauiBlazorWebView();
 
-            var connectionString = "server=127.0.0.1;port=3306;database=trajetcalculator;user=root;password=;";
+            var connectionString = "server=127.0.0.1;port=3305;database=TrajetCalculator;user=root;password=root;";
 
             builder.Services.AddDbContext<TrajetCalculatorDbContext>(options =>
             {
