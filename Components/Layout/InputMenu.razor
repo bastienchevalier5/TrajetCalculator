@@ -138,41 +138,18 @@
         public string Label { get; set; } = "";
     }
 
-    private async Task LoadFilteredCommunes()
-    {
-        FilteredCommunes.Clear();
-        if (SelectedDepartureId.HasValue)
-            FilteredCommunes.Add(await DatabaseService.GetCommuneByIdAsync(SelectedDepartureId.Value));
-
-        foreach (var waypoint in Waypoints)
-        {
-            if (waypoint.Id != 0)
-                FilteredCommunes.Add(await DatabaseService.GetCommuneByIdAsync(waypoint.Id));
-        }
-
-        if (SelectedArrivalId.HasValue)
-            FilteredCommunes.Add(await DatabaseService.GetCommuneByIdAsync(SelectedArrivalId.Value));
-    }
-
-    public async Task<List<Commune>> LoadCitiesAsync()
-    {
-        var options = new Microsoft.EntityFrameworkCore.DbContextOptions<TrajetCalculatorDbContext>();
-        using var context = new TrajetCalculatorDbContext(options);
-        return await DatabaseService.GetCommunesAsync();
-    }
-
-    private async Task<List<string>> CalculItineraire(Commune Departure, List<Commune> FilteredCommunes, Commune Arrival)
+    private async Task<List<string>> CalculItineraire(int Departure, List<int> Waypoints, int Arrival)
     {
         if (!SelectedDepartureId.HasValue || !SelectedArrivalId.HasValue) return new List<string> { "Veuillez sélectionner une ville de départ et une ville d'arrivée." };
 
-        var departure = await DatabaseService.GetCommuneByIdAsync(SelectedDepartureId.Value);
-        var arrival = await DatabaseService.GetCommuneByIdAsync(SelectedArrivalId.Value);
+        var departure = await DatabaseService.GetCommuneByIdAsync(Departure);
+        var arrival = await DatabaseService.GetCommuneByIdAsync(Arrival);
         var waypoints = new List<Commune>();
 
         foreach (var waypoint in Waypoints)
         {
-            if (waypoint.Id != 0)
-                waypoints.Add(await DatabaseService.GetCommuneByIdAsync(waypoint.Id));
+            if (waypoint != 0)
+                waypoints.Add(await DatabaseService.GetCommuneByIdAsync(waypoint));
         }
 
         var shortestPath = await FindOptimalRoute(AllCommunes, departure.Label, waypoints.Select(v => v.Label).ToList(), arrival.Label);
