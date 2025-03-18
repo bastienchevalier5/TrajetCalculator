@@ -15,7 +15,7 @@
     ">
     <div class="bg-secondary" style="width:80px;height:5px;border-radius:20px;"></div>
     <div class="route-container w-100 overflow-auto" style="max-height: 400px;">
-        <form class="d-flex flex-column gap-2 p-4 rounded-4 position-relative">
+        <EditForm Model="@commune" class="d-flex flex-column gap-2 p-4 rounded-4 position-relative" OnValidSubmit="OnSubmit">
             <!-- Ligne pointillée verticale -->
             <div class="position-absolute" style="left: 41px; top: 40px; bottom: 40px; width: 2px; border-left: 2px dashed #6c757d; z-index: 1;"></div>
 
@@ -24,11 +24,15 @@
                 <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
                     <i class="bi bi-geo-alt-fill text-white m-0"></i>
                 </div>
-                <input type="text" @bind="SelectedDepartureId" @oninput="FilterCommunes"
+                <input type="text" id="departureInput"
+                       @bind-value="SelectedDepartureLabel"
+                       @bind-value:event="oninput"
+                       @onchange="e => SelectDepartureCommune(e.Value.ToString())"
                        placeholder="Ville de départ"
                        list="communesList"
                        class="input-route bg-transparent p-2 border border-secondary text-white w-100"
-                       style="border-radius:50px; transition: all 0.3s ease;">
+                       style="border-radius:50px; transition: all 0.3s ease;" />
+
             </div>
 
             <!-- Étapes intermédiaires générées dynamiquement -->
@@ -38,11 +42,15 @@
                     <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
                         <i class="bi bi-circle-fill text-white m-0"></i>
                     </div>
-                    <input type="text" @bind="waypoint.Label" @oninput="FilterCommunes"
+                    <input type="text" id="waypointInput-@waypoint.Id"
+                           @bind-value="waypoint.Label"
+                           @bind-value:event="oninput"
+                           @onchange="e => SelectWaypointCommune(waypoint.Id, e.Value.ToString())"
                            placeholder="Étape intermédiaire"
                            list="communesList"
                            class="input-route bg-transparent p-2 border border-secondary text-white w-100"
-                           style="border-radius:50px; transition: all 0.3s ease;">
+                           style="border-radius:50px; transition: all 0.3s ease;" />
+
                     <button type="button" class="p-0 btn btn-sm bg-transparent border-0 position-relative"
                             @onclick="() => RemoveWaypoint(waypoint.Id)"
                             style="border: 2px solid red; border-radius: 50%; transition: box-shadow 0.3s ease;"
@@ -51,6 +59,7 @@
                     </button>
                 </div>
             }
+
 
             <!-- Bouton d'ajout d'étape -->
             <div class="m-2" style="z-index: 2;">
@@ -64,36 +73,304 @@
                 <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="max-height:36px; width: 36px;">
                     <i class="bi bi-flag-fill text-white m-0"></i>
                 </div>
-                <input type="text" @bind="SelectedArrivalId" @oninput="FilterCommunes"
+                <input type="text" id="arrivalInput"
+                       @bind-value="SelectedArrivalLabel"
+                       @bind-value:event="oninput"
+                       @onchange="e => SelectArrivalCommune(e.Value.ToString())"
                        placeholder="Ville d'arrivée"
                        list="communesList"
                        class="input-route bg-transparent p-2 border border-secondary text-white w-100"
-                       style="border-radius:50px; transition: all 0.3s ease;">
+                       style="border-radius:50px; transition: all 0.3s ease;" />
+
             </div>
-        </form>
+
+            <div class="mt-3">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Calculer l'itinéraire</button>
+                    <button type="button" class="btn btn-secondary" @onclick="TestConnection">Test DB</button>
+                </div>
+            </div>
+        </EditForm>
     </div>
 
     <!-- Liste des villes filtrées pour l'auto-complétion -->
     <datalist id="communesList">
         @foreach (var commune in FilteredCommunes)
         {
-            <option value="@commune.Label (@commune.ZipCode)"></option>
+            <option value="@commune.Label (@commune.ZipCode)" data-insee="@commune.InseeCode"></option>
         }
     </datalist>
+
+    <!-- Informations de débogage -->
+    <div class="mt-3 p-2 w-100 border border-secondary rounded-3 text-white">
+        <h5>Informations de sélection:</h5>
+        <ul class="text-start">
+            <li>Départ ID: @SelectedDepartureId, Label: @SelectedDepartureLabel</li>
+            <li>Arrivée ID: @SelectedArrivalId, Label: @SelectedArrivalLabel</li>
+            <li>Points intermédiaires: @Waypoints.Count</li>
+            <li>Communes chargées: @(AllCommunes?.Count ?? 0)</li>
+        </ul>
+    </div>
+
+    <!-- Affichage des résultats de l'itinéraire -->
+    @if (CalculatedRoute != null && CalculatedRoute.Any())
+    {
+        <div class="mt-4 p-3 w-100 border border-secondary rounded-3">
+            <h4 class="text-white mb-3">Itinéraire calculé:</h4>
+            <div class="d-flex flex-column align-items-start">
+                @for (int i = 0; i < CalculatedRoute.Count; i++)
+                {
+                    <div class="d-flex gap-2 align-items-center mb-2">
+                        <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="width: 24px; height: 24px;">
+                            <span class="text-white m-0 p-0">@(i + 1)</span>
+                        </div>
+                        <span class="text-white">@CalculatedRoute[i]</span>
+                    </div>
+                    @if (i < CalculatedRoute.Count - 1)
+                    {
+                        <div class="ms-3 ps-1" style="border-left: 2px dashed #6c757d; height: 15px;"></div>
+                    }
+                }
+            </div>
+            <div class="mt-3 text-white">
+                <small>Distance totale estimée: @Math.Round(TotalDistance, 2) km</small>
+            </div>
+        </div>
+    }
+    @if (HasError)
+    {
+        <div class="mt-3 p-2 alert alert-danger">
+            Impossible de calculer l'itinéraire. Veuillez vérifier vos sélections.
+            <p><small>@ErrorMessage</small></p>
+        </div>
+    }
 </div>
 
+<script>
+    function updateInseeCode(inputId, hiddenId) {
+        let input = document.getElementById(inputId);
+        let hiddenInput = document.getElementById(hiddenId);
+        let datalist = document.getElementById('communesList');
+
+        if (input && hiddenInput && datalist) {
+            let found = false;
+            for (let option of datalist.options) {
+                if (option.value === input.value) {
+                    hiddenInput.value = option.getAttribute('data-insee'); // Stocke le code INSEE
+                    found = true;
+                    break;
+                }
+            }
+
+            // Si aucune correspondance exacte, chercher une correspondance partielle
+            if (!found) {
+                const inputValue = input.value.toLowerCase();
+                for (let option of datalist.options) {
+                    const optionValue = option.value.toLowerCase();
+                    if (optionValue.includes(inputValue) || inputValue.includes(optionValue)) {
+                        hiddenInput.value = option.getAttribute('data-insee');
+                        input.value = option.value; // On corrige aussi la valeur affichée
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found) {
+                hiddenInput.value = ''; // Réinitialise si la valeur entrée ne correspond pas
+            }
+        }
+    }
+</script>
+
+
 @code {
+    private Commune? commune = new Commune();
     private int? SelectedDepartureId;
     private int? SelectedArrivalId;
+    private string SelectedDepartureLabel { get; set; } = "";
+    private string SelectedArrivalLabel { get; set; } = "";
+
     private List<Commune> AllCommunes = new();
     private List<Commune> FilteredCommunes = new();
     private List<Waypoint> Waypoints = new();
 
+    // Nouvelles propriétés pour stocker et afficher les résultats
+    private List<string> CalculatedRoute = new();
+    private double TotalDistance = 0;
+    private bool HasError = false;
+    private string ErrorMessage = "";
+
+    private void SelectDepartureCommune(string inputValue)
+    {
+        var commune = FilteredCommunes.FirstOrDefault(c =>
+            $"{c.Label} ({c.ZipCode})" == inputValue);
+
+        if (commune != null)
+        {
+            SelectedDepartureId = Int32.Parse(commune.InseeCode);
+            SelectedDepartureLabel = $"{commune.Label} ({commune.ZipCode})";
+        }
+    }
+
+    private void SelectArrivalCommune(string inputValue)
+    {
+        var commune = FilteredCommunes.FirstOrDefault(c =>
+            $"{c.Label} ({c.ZipCode})" == inputValue);
+
+        if (commune != null)
+        {
+            SelectedArrivalId = Int32.Parse(commune.InseeCode);
+            SelectedArrivalLabel = $"{commune.Label} ({commune.ZipCode})";
+        }
+    }
+
+    private void SelectWaypointCommune(int waypointId, string inputValue)
+    {
+        var waypoint = Waypoints.FirstOrDefault(w => w.Id == waypointId);
+        if (waypoint == null) return;
+
+        var commune = FilteredCommunes.FirstOrDefault(c =>
+            $"{c.Label} ({c.ZipCode})" == inputValue);
+
+        if (commune != null)
+        {
+            waypoint.InseeCode = Int32.Parse(commune.InseeCode);
+            waypoint.Label = $"{commune.Label} ({commune.ZipCode})";
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        HasError = false;
+        ErrorMessage = "";
+
+        // Vérifier si les entrées sont valides
+        if (!SelectedDepartureId.HasValue)
+        {
+            HasError = true;
+            ErrorMessage = "Veuillez sélectionner une ville de départ valide";
+            return;
+        }
+
+        if (!SelectedArrivalId.HasValue)
+        {
+            HasError = true;
+            ErrorMessage = "Veuillez sélectionner une ville d'arrivée valide";
+            return;
+        }
+
+        try
+        {
+            var departure = await DatabaseService.GetCommuneByIdAsync(SelectedDepartureId.Value);
+            var arrival = await DatabaseService.GetCommuneByIdAsync(SelectedArrivalId.Value);
+
+            if (departure == null)
+            {
+                HasError = true;
+                ErrorMessage = "Ville de départ non trouvée dans la base de données";
+                return;
+            }
+
+            if (arrival == null)
+            {
+                HasError = true;
+                ErrorMessage = "Ville d'arrivée non trouvée dans la base de données";
+                return;
+            }
+
+            // Construire la liste des points intermédiaires valides
+            var intermediaires = new List<int>();
+            foreach (var waypoint in Waypoints)
+            {
+                if (waypoint.InseeCode.HasValue)
+                {
+                    var wpCommune = await DatabaseService.GetCommuneByIdAsync(waypoint.InseeCode.Value);
+                    if (wpCommune != null)
+                    {
+                        intermediaires.Add(waypoint.InseeCode.Value);
+                    }
+                }
+            }
+
+            // Calculer l'itinéraire
+            CalculatedRoute = await CalculItineraire(SelectedDepartureId.Value, intermediaires, SelectedArrivalId.Value);
+
+            if (CalculatedRoute == null || CalculatedRoute.Count < 2)
+            {
+                HasError = true;
+                ErrorMessage = "Aucun itinéraire valide n'a pu être calculé entre ces villes";
+                CalculatedRoute = new List<string>();
+            }
+            else
+            {
+                // Calculer la distance totale
+                TotalDistance = await CalculateRouteTotalDistance();
+            }
+        }
+        catch (Exception ex)
+        {
+            HasError = true;
+            ErrorMessage = $"Erreur lors du calcul : {ex.Message}";
+            CalculatedRoute = new List<string>();
+        }
+
+        StateHasChanged(); // Force UI refresh
+    }
+
+    private async Task TestConnection()
+    {
+        try
+        {
+            var communes = await DatabaseService.GetCommunesAsync();
+            AllCommunes = communes.OrderBy(c => c.Label).ToList();
+            FilteredCommunes = AllCommunes;
+            ErrorMessage = $"Connexion OK - {communes.Count} communes chargées";
+            HasError = false;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Erreur de connexion : {ex.Message}";
+            HasError = true;
+        }
+        StateHasChanged();
+    }
+
+    private async Task<double> CalculateRouteTotalDistance()
+    {
+        if (CalculatedRoute.Count < 2) return 0;
+
+        double totalDistance = 0;
+
+        for (int i = 0; i < CalculatedRoute.Count - 1; i++)
+        {
+            var startCity = AllCommunes.FirstOrDefault(c => c.Label == CalculatedRoute[i]);
+            var endCity = AllCommunes.FirstOrDefault(c => c.Label == CalculatedRoute[i + 1]);
+
+            if (startCity != null && endCity != null)
+            {
+                totalDistance += CalculDistanceVille(startCity, endCity);
+            }
+        }
+
+        return totalDistance;
+    }
+
     protected override async Task OnInitializedAsync()
     {
-        // Récupérer la liste des communes et les trier par ordre alphabétique
-        AllCommunes = (await DatabaseService.GetCommunesAsync()).OrderBy(c => c.Label).ToList();
-        FilteredCommunes = AllCommunes;
+        try
+        {
+            // Récupérer la liste des communes et les trier par ordre alphabétique
+            AllCommunes = (await DatabaseService.GetCommunesAsync()).OrderBy(c => c.Label).ToList();
+            FilteredCommunes = AllCommunes;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Erreur lors du chargement des communes : {ex.Message}";
+            HasError = true;
+            AllCommunes = new List<Commune>();
+            FilteredCommunes = new List<Commune>();
+        }
     }
 
     private void FilterCommunes(ChangeEventArgs e)
@@ -118,7 +395,7 @@
             .ToList();
 
         // Fusionner les résultats
-        FilteredCommunes = startsWith.Concat(contains).ToList();
+        FilteredCommunes = startsWith.Concat(contains).Take(50).ToList(); // Limiter pour des raisons de performance
     }
 
 
@@ -136,6 +413,7 @@
     {
         public int Id { get; set; }
         public string Label { get; set; } = "";
+        public int? InseeCode { get; set; }
     }
 
     private async Task<List<string>> CalculItineraire(int Departure, List<int> Waypoints, int Arrival)
@@ -151,94 +429,207 @@
             if (waypoint != 0)
                 waypoints.Add(await DatabaseService.GetCommuneByIdAsync(waypoint));
         }
-
-        var shortestPath = await FindOptimalRoute(AllCommunes, departure.Label, waypoints.Select(v => v.Label).ToList(), arrival.Label);
-
-        return shortestPath;
     }
 
     public async Task<List<string>> FindOptimalRoute(List<Commune> communes, string start, List<string> required, string end)
     {
-        double minDistance = double.MaxValue;
-        List<string> ?bestRoute = null;
-
-        foreach (var perm in GetPermutations(required, required.Count))
+        // Si aucun point intermédiaire, on va direct de start à end
+        if (required.Count == 0)
         {
-            List<string> route = new List<string> { start };
-            route.AddRange(perm);
-            route.Add(end);
-
-            double totalDistance = 0;
-            bool validRoute = true;
-
-            for (int i = 0; i < route.Count - 1; i++)
-            {
-                var subPath = Dijkstra(communes, route[i], route[i + 1]);
-                if (subPath.Count == 0)
-                {
-                    validRoute = false;
-                    break;
-                }
-                totalDistance += subPath.Count - 1;
-            }
-
-            if (validRoute && totalDistance < minDistance)
-            {
-                minDistance = totalDistance;
-                bestRoute = new List<string>(route);
-            }
+            return Dijkstra(communes, start, end);
         }
 
-        return bestRoute ?? new List<string>();
+        try
+        {
+            double minDistance = double.MaxValue;
+            List<string>? bestRoute = null;
+
+            // Pour gérer même les cas où il y a de nombreux points intermédiaires,
+            // on limite à un maximum de permutations à essayer
+            var allPermutations = GetPermutations(required, required.Count).ToList();
+
+            // Si trop de points intermédiaires, on limite à 100 permutations aléatoires
+            if (allPermutations.Count > 100)
+            {
+                var random = new Random();
+                allPermutations = allPermutations
+                    .OrderBy(x => random.Next())
+                    .Take(100)
+                    .ToList();
+            }
+
+            foreach (var perm in allPermutations)
+            {
+                List<string> route = new List<string> { start };
+                route.AddRange(perm);
+                route.Add(end);
+
+                double totalDistance = 0;
+                bool validRoute = true;
+
+                for (int i = 0; i < route.Count - 1; i++)
+                {
+                    var subPath = Dijkstra(communes, route[i], route[i + 1]);
+                    if (subPath.Count == 0)
+                    {
+                        validRoute = false;
+                        break;
+                    }
+
+                    // Si ce n'est pas le premier segment, on retire le premier élément
+                    // qui est le même que le dernier du segment précédent
+                    if (i > 0 && subPath.Count > 1)
+                    {
+                        // On retire le premier point car il est déjà dans le chemin
+                        subPath.RemoveAt(0);
+                    }
+
+                    // On ajoute les points de ce segment au chemin global
+                    if (i == 0)
+                    {
+                        // Pour le premier segment, on met tout
+                        totalDistance += subPath.Count - 1;
+                    }
+                    else
+                    {
+                        // Pour les autres segments, le premier point est déjà compté
+                        totalDistance += subPath.Count;
+                    }
+                }
+
+                if (validRoute && totalDistance < minDistance)
+                {
+                    minDistance = totalDistance;
+
+                    // Reconstruire le chemin complet
+                    bestRoute = new List<string>();
+                    bestRoute.Add(start);
+
+                    for (int i = 0; i < perm.Count(); i++)
+                    {
+                        var current = perm.ElementAt(i);
+                        var subPath = Dijkstra(communes, i == 0 ? start : perm.ElementAt(i - 1), current);
+
+                        // On ajoute tous les points sauf le premier (qui est déjà dans le chemin)
+                        if (subPath.Count > 1)
+                        {
+                            for (int j = 1; j < subPath.Count; j++)
+                            {
+                                bestRoute.Add(subPath[j]);
+                            }
+                        }
+                    }
+
+                    // Ajouter le chemin vers la destination finale
+                    var finalPath = Dijkstra(communes, perm.Last(), end);
+                    if (finalPath.Count > 1)
+                    {
+                        for (int j = 1; j < finalPath.Count; j++)
+                        {
+                            bestRoute.Add(finalPath[j]);
+                        }
+                    }
+                }
+            }
+
+            return bestRoute ?? new List<string>();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Erreur dans FindOptimalRoute: {ex.Message}";
+            return new List<string>();
+        }
     }
 
     public List<string> Dijkstra(List<Commune> communes, string start, string end)
     {
-        var distances = new Dictionary<string, double>();
-        var previous = new Dictionary<string, string>();
-        var pq = new SortedSet<(double, string)>();
-
-        foreach (var commune in communes)
+        try
         {
-            distances[commune.Label] = double.MaxValue;
-        }
-        distances[start] = 0;
-        pq.Add((0, start));
+            // Vérifier que les villes existent dans la liste
+            var startCommune = communes.FirstOrDefault(c => c.Label == start);
+            var endCommune = communes.FirstOrDefault(c => c.Label == end);
 
-        while (pq.Count > 0)
-        {
-            var (dist, current) = pq.Min;
-            pq.Remove(pq.Min);
-
-            if (current == end) break;
-
-            var currentCommune = communes.First(v => v.Label == current);
-
-            foreach (var neighbor in communes)
+            if (startCommune == null || endCommune == null)
             {
-                if (neighbor.Label == current) continue;
+                return new List<string>();
+            }
 
-                double newDist = dist + CalculDistanceVille(currentCommune, neighbor);
-                if (newDist < distances[neighbor.Label])
+            var distances = new Dictionary<string, double>();
+            var previous = new Dictionary<string, string>();
+            var pq = new SortedSet<(double, string)>();
+
+            foreach (var commune in communes)
+            {
+                distances[commune.Label] = double.MaxValue;
+            }
+            distances[start] = 0;
+            pq.Add((0, start));
+
+            while (pq.Count > 0)
+            {
+                var min = pq.Min;
+                var (dist, current) = min;
+                pq.Remove(min);
+
+                if (current == end) break;
+
+                var currentCommune = communes.FirstOrDefault(v => v.Label == current);
+                if (currentCommune == null) continue;
+
+                // Pour plus d'efficacité, on ne considère que les communes dans un certain rayon
+                var nearbyCommunes = communes.Where(c =>
+                    CalculDistanceVille(currentCommune, c) < 200 && // Limite de distance en km
+                    c.Label != current
+                ).ToList();
+
+                foreach (var neighbor in nearbyCommunes)
                 {
-                    pq.Remove((distances[neighbor.Label], neighbor.Label));
-                    distances[neighbor.Label] = newDist;
-                    previous[neighbor.Label] = current;
-                    pq.Add((newDist, neighbor.Label));
+                    double newDist = dist + CalculDistanceVille(currentCommune, neighbor);
+                    if (newDist < distances[neighbor.Label])
+                    {
+                        // S'il est déjà dans la file, on le retire
+                        var oldEntry = pq.FirstOrDefault(p => p.Item2 == neighbor.Label);
+                        if (oldEntry.Item2 != null)
+                        {
+                            pq.Remove(oldEntry);
+                        }
+
+                        distances[neighbor.Label] = newDist;
+                        previous[neighbor.Label] = current;
+                        pq.Add((newDist, neighbor.Label));
+                    }
                 }
             }
-        }
 
-        return ReconstructPath(previous, start, end);
+            var path = ReconstructPath(previous, start, end);
+            return path;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Erreur dans Dijkstra: {ex.Message}";
+            return new List<string>();
+        }
     }
 
     private List<string> ReconstructPath(Dictionary<string, string> previous, string start, string end)
     {
         var path = new List<string>();
+
+        // Vérification si un chemin existe
+        if (!previous.ContainsKey(end))
+        {
+            return new List<string>();
+        }
+
         for (string at = end; at != null; at = previous.GetValueOrDefault(at))
         {
             path.Add(at);
+
+            // Si on est arrivé au point de départ, on sort de la boucle
+            if (at == start)
+                break;
         }
+
         path.Reverse();
         return path.Count > 1 ? path : new List<string>();
     }
@@ -247,6 +638,8 @@
     {
         if (length == 1) return list.Select(t => new T[] { t });
 
+        if (list.Count() <= 1) return new List<IEnumerable<T>> { list };
+
         return GetPermutations(list, length - 1)
             .SelectMany(t => list.Where(e => !t.Contains(e)),
                         (t1, t2) => t1.Concat(new T[] { t2 }));
@@ -254,6 +647,8 @@
 
     private double CalculDistanceVille(Commune Departure, Commune Arrival)
     {
+        if (Departure == null || Arrival == null) return double.MaxValue;
+
         const double kmPerDegree = 111.0;
 
         double deltaLatitude = (double)(Arrival.Latitude - Departure.Latitude);
@@ -267,4 +662,3 @@
         return Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
     }
 }
-
