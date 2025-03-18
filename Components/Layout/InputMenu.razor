@@ -45,8 +45,11 @@
                            list="communesList"
                            class="input-route bg-transparent p-2 border border-secondary text-white w-100"
                            style="border-radius:50px; transition: all 0.3s ease;">
-                    <button type="button" class="p-0 btn btn-sm text-danger bg-transparent border-0" @onclick="() => RemoveWaypoint(waypoint.Id)">
-                        <i class="bi bi-x-circle-fill m-0"></i>
+                    <button type="button" class="p-0 btn btn-sm bg-transparent border-0 position-relative"
+                            @onclick="() => RemoveWaypoint(waypoint.Id)"
+                            style="border: 2px solid red; border-radius: 50%; transition: box-shadow 0.3s ease;"
+                            onfocus="this.blur();">
+                        <i class="bi bi-x-circle-fill text-danger m-0"></i>
                     </button>
                 </div>
             }
