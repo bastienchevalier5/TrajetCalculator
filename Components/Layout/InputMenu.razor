@@ -186,8 +186,8 @@
 
 @code {
     private Commune? commune = new Commune();
-    private int? SelectedDepartureId;
-    private int? SelectedArrivalId;
+    private string? SelectedDepartureId;
+    private string? SelectedArrivalId;
     private string SelectedDepartureLabel { get; set; } = "";
     private string SelectedArrivalLabel { get; set; } = "";
 
@@ -208,7 +208,7 @@
 
         if (commune != null)
         {
-            SelectedDepartureId = Int32.Parse(commune.InseeCode);
+            SelectedDepartureId = commune.InseeCode;
             SelectedDepartureLabel = $"{commune.Label} ({commune.ZipCode})";
         }
     }
@@ -220,7 +220,7 @@
 
         if (commune != null)
         {
-            SelectedArrivalId = Int32.Parse(commune.InseeCode);
+            SelectedArrivalId = commune.InseeCode;
             SelectedArrivalLabel = $"{commune.Label} ({commune.ZipCode})";
         }
     }
@@ -235,7 +235,7 @@
 
         if (commune != null)
         {
-            waypoint.InseeCode = Int32.Parse(commune.InseeCode);
+            waypoint.InseeCode = commune.InseeCode;
             waypoint.Label = $"{commune.Label} ({commune.ZipCode})";
         }
     }
@@ -246,14 +246,14 @@
         ErrorMessage = "";
 
         // Vérifier si les entrées sont valides
-        if (!SelectedDepartureId.HasValue)
+        if (string.IsNullOrEmpty(SelectedDepartureId))
         {
             HasError = true;
             ErrorMessage = "Veuillez sélectionner une ville de départ valide";
             return;
         }
 
-        if (!SelectedArrivalId.HasValue)
+        if (string.IsNullOrEmpty(SelectedArrivalId))
         {
             HasError = true;
             ErrorMessage = "Veuillez sélectionner une ville d'arrivée valide";
@@ -262,17 +262,15 @@
 
         try
         {
-            var departure = await DatabaseService.GetCommuneByIdAsync(SelectedDepartureId.Value);
-            var arrival = await DatabaseService.GetCommuneByIdAsync(SelectedArrivalId.Value);
 
-            if (departure == null)
+            if (SelectedDepartureId == null)
             {
                 HasError = true;
                 ErrorMessage = "Ville de départ non trouvée dans la base de données";
                 return;
             }
 
-            if (arrival == null)
+            if (SelectedArrivalId == null)
             {
                 HasError = true;
                 ErrorMessage = "Ville d'arrivée non trouvée dans la base de données";
@@ -280,21 +278,21 @@
             }
 
             // Construire la liste des points intermédiaires valides
-            var intermediaires = new List<int>();
+            var intermediaires = new List<string>();
             foreach (var waypoint in Waypoints)
             {
-                if (waypoint.InseeCode.HasValue)
+                if (string.IsNullOrEmpty(waypoint.InseeCode))
                 {
-                    var wpCommune = await DatabaseService.GetCommuneByIdAsync(waypoint.InseeCode.Value);
+                    var wpCommune = await DatabaseService.GetCommuneByIdAsync(waypoint.InseeCode);
                     if (wpCommune != null)
                     {
-                        intermediaires.Add(waypoint.InseeCode.Value);
+                        intermediaires.Add(waypoint.InseeCode);
                     }
                 }
             }
 
             // Calculer l'itinéraire
-            CalculatedRoute = await CalculItineraire(SelectedDepartureId.Value, intermediaires, SelectedArrivalId.Value);
+            CalculatedRoute = await CalculItineraire(SelectedDepartureId, intermediaires, SelectedArrivalId);
 
             if (CalculatedRoute == null || CalculatedRoute.Count < 2)
             {
@@ -413,10 +411,10 @@
     {
         public int Id { get; set; }
         public string Label { get; set; } = "";
-        public int? InseeCode { get; set; }
+        public string? InseeCode { get; set; }
     }
 
-    private async Task<List<string>> CalculItineraire(int departureId, List<int> waypointIds, int arrivalId)
+    private async Task<List<string>> CalculItineraire(string departureId, List<string> waypointIds, string arrivalId)
     {
         try
         {

@@ -18,7 +18,7 @@ namespace TrajetCalculator
             return await _context.Communes.ToListAsync();
         }
 
-        public async Task<Commune?> GetCommuneByIdAsync(int id)
+        public async Task<Commune?> GetCommuneByIdAsync(string id)
         {
             return await _context.Communes.FindAsync(id);
         }
