@@ -50,25 +50,50 @@ function initMap() {
         popupAnchor: [0, -35] // Position du popup
     });
 
-    // Points de l'itinéraire
+    // Points de l'itinéraire avec des informations supplémentaires
     var locations = [
-        { latLng: [48.8566, 2.3522], name: "Paris", icon: startPin },
-        { latLng: [45.7640, 4.8357], name: "Lyon", icon: middlePin },
-        { latLng: [43.2965, 5.3698], name: "Marseille", icon: middlePin },
-        { latLng: [44.8378, -0.5792], name: "Bordeaux", icon: endPin }
+        {
+            latLng: [48.8566, 2.3522],
+            name: "Paris",
+            icon: startPin,
+            info: "Départ de l'itinéraire"
+        },
+        {
+            latLng: [45.7640, 4.8357],
+            name: "Lyon",
+            icon: middlePin,
+            info: "Étape 1"
+        },
+        {
+            latLng: [43.2965, 5.3698],
+            name: "Marseille",
+            icon: middlePin,
+            info: "Étape 2"
+        },
+        {
+            latLng: [44.8378, -0.5792],
+            name: "Bordeaux",
+            icon: endPin,
+            info: "Arrivée"
+        }
     ];
 
-    // Ajouter les marqueurs à la carte
-    var markers = locations.map(function (loc) {
+    // Créer les popups personnalisés et les ajouter à la carte
+    var markers = locations.map(function (loc, index) {
+        // Créer le contenu du popup avec HTML personnalisé
+        var popupContent = createCustomPopupContent(loc, index);
+
+        // Créer le marqueur avec le popup personnalisé
         return L.marker(loc.latLng, { icon: loc.icon })
-            .bindPopup(loc.name);
+            .bindPopup(popupContent, {
+                className: 'custom-popup',
+                maxWidth: 300,
+                closeButton: false
+            });
     });
 
     // Ajouter seulement le premier marqueur au début
     markers[0].addTo(map).openPopup();
-
-    // Créer le style pour les effets néon
-    addNeonStyles();
 
     // Ajouter le sélecteur de thème
     if (typeof addCartoDBThemeSelector === 'function') {
@@ -129,51 +154,22 @@ function initMap() {
     });
 }
 
-// Fonction pour ajouter les styles néon
-function addNeonStyles() {
-    var style = document.createElement('style');
-    style.innerHTML = `
-        .neon-path {
-            filter: drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 8px #00ffff);
-            animation: neonPulse 1.5s infinite alternate;
-        }
-
-        .neon-glow {
-            filter: blur(4px);
-            animation: neonGlowPulse 1.5s infinite alternate;
-        }
-
-        @keyframes neonPulse {
-            from { filter: drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 8px #00ffff); }
-            to { filter: drop-shadow(0 0 10px #00ffff) drop-shadow(0 0 15px #00ffff); }
-        }
-
-        @keyframes neonGlowPulse {
-            from { opacity: 0.2; }
-            to { opacity: 0.4; }
-        }
-
-        .start-pin, .end-pin, .middle-pin{
-            border-radius: 50%;
-            animation: markerPulse 1.5s infinite alternate;
-        }
-
-        @keyframes markerPulse {
-            from { box-shadow: 0 0 5px #00ffff, 0 0 8px #00ffff; }
-            to { box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; }
-        }
-        
-        .segment-animation {
-            stroke-dasharray: 1000;
-            stroke-dashoffset: 1000;
-            animation: drawPath 1.73s forwards linear;
-        }
-        
-        @keyframes drawPath {
-            to { stroke-dashoffset: 0; }
-        }
+// Fonction pour créer le contenu personnalisé du popup
+function createCustomPopupContent(location, index) {
+    // Créer un contenu plus riche avec des informations supplémentaires
+    var content = `
+        <div class="popup-container">
+            <div class="popup-header">
+                <h3>${location.name}</h3>
+                <span class="popup-info">${location.info}</span>
+            </div>
+            <div class="popup-footer">
+                <span class="popup-position">Position: ${index + 1}/${4}</span>
+            </div>
+        </div>
     `;
-    document.head.appendChild(style);
+
+    return content;
 }
 
 // Fonction pour créer un objet audio avec un fichier personnalisé

@@ -173,3 +173,123 @@ h1:focus {
     .route-container::-webkit-scrollbar-thumb:hover {
         background: rgba(108, 117, 125, 0.8);
     }
+
+.neon-path {
+    filter: drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 8px #00ffff);
+    animation: neonPulse 1.5s infinite alternate;
+}
+
+.neon-glow {
+    filter: blur(4px);
+    animation: neonGlowPulse 1.5s infinite alternate;
+}
+
+@keyframes neonPulse {
+    from {
+        filter: drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 8px #00ffff);
+    }
+
+    to {
+        filter: drop-shadow(0 0 10px #00ffff) drop-shadow(0 0 15px #00ffff);
+    }
+}
+
+@keyframes neonGlowPulse {
+    from {
+        opacity: 0.2;
+    }
+
+    to {
+        opacity: 0.4;
+    }
+}
+
+.start-pin, .end-pin, .middle-pin {
+    border-radius: 50%;
+    animation: markerPulse 1.5s infinite alternate;
+}
+
+@keyframes markerPulse {
+    from {
+        box-shadow: 0 0 5px #00ffff, 0 0 8px #00ffff;
+    }
+
+    to {
+        box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+    }
+}
+
+.segment-animation {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: drawPath 1.73s forwards linear;
+}
+
+@keyframes drawPath {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.custom-popup .leaflet-popup-content-wrapper {
+    background-color: rgba(0, 10, 30, 0.8);
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.custom-popup .leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+    width: 280px !important;
+}
+
+.custom-popup .leaflet-popup-tip {
+    background-color: rgba(0, 10, 30, 0.8);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.popup-container {
+    padding: 0;
+}
+
+.popup-header {
+    background-color: rgba(0, 100, 200, 0.6);
+    padding: 10px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+    .popup-header h3 {
+        margin: 0;
+        padding: 0;
+        color: #fff;
+        font-size: 18px;
+        font-weight: bold;
+        text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+    }
+
+.popup-info {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    display: block;
+    margin-top: 5px;
+}
+
+.popup-footer {
+    background-color: rgba(0, 50, 100, 0.6);
+    padding: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-top: 1px solid rgba(0, 255, 255, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup-position {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
