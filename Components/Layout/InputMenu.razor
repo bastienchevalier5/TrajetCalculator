@@ -1,4 +1,5 @@
 ﻿@inject DatabaseService DatabaseService
+@inject MapService MapService
 @using Microsoft.AspNetCore.Components.Forms
 
 @page "/route-planner"
@@ -92,6 +93,11 @@ style="
             </div>
         </EditForm>
     </div>
+            <button class="btn btn-primary mt-3" @onclick="MettreAJourCarte"> 
+                 Mettre à jour la carte 
+            </button>
+
+    </div>
 
     <!-- Liste des villes filtrées pour l'auto-complétion -->
     <datalist id="communesList">
@@ -144,7 +150,8 @@ style="
             <p><small>@ErrorMessage</small></p>
         </div>
     }
-</div>
+
+<script src="maptheme.js"></script>
 
 <script>
     function updateInseeCode(inputId, hiddenId) {
@@ -194,6 +201,8 @@ style="
     private List<Commune> AllCommunes = new();
     private List<Commune> FilteredCommunes = new();
     private List<Waypoint> Waypoints = new();
+    private List<Commune> communes = new();
+    private List<Commune> selectionVilles = new();
 
     // Nouvelles propriétés pour stocker et afficher les résultats
     private List<string> CalculatedRoute = new();
@@ -375,6 +384,64 @@ style="
             FilteredCommunes = new List<Commune>();
         }
     }
+    private string? Depart;
+    private string? Etape1;
+    private string? Etape2;
+    private string? Etape3;
+    private string? Arrivee;
+
+    private async Task MettreAJourCarte()
+    {
+        selectionVilles.Clear();
+
+        // Assurer que AllCommunes est bien rempli
+        if (AllCommunes == null || AllCommunes.Count == 0)
+        {
+            Console.WriteLine("❌ Erreur : AllCommunes est vide !");
+            return;
+        }
+
+        // Ajouter la ville de départ
+        if (!string.IsNullOrEmpty(SelectedDepartureId))
+        {
+            var depart = AllCommunes.FirstOrDefault(c => c.InseeCode == SelectedDepartureId);
+            if (depart != null) selectionVilles.Add(depart);
+        }
+
+        // Ajouter les étapes intermédiaires
+        foreach (var waypoint in Waypoints)
+        {
+            if (!string.IsNullOrEmpty(waypoint.InseeCode))
+            {
+                var etape = AllCommunes.FirstOrDefault(c => c.InseeCode == waypoint.InseeCode);
+                if (etape != null) selectionVilles.Add(etape);
+            }
+        }
+
+        // Ajouter la ville d'arrivée
+        if (!string.IsNullOrEmpty(SelectedArrivalId))
+        {
+            var arrivee = AllCommunes.FirstOrDefault(c => c.InseeCode == SelectedArrivalId);
+            if (arrivee != null) selectionVilles.Add(arrivee);
+        }
+
+        // Vérifier si des villes sont trouvées
+        if (selectionVilles.Count == 0)
+        {
+            Console.WriteLine("❌ Aucune ville trouvée après filtrage !");
+            return;
+        }
+
+        // Debug : Afficher les villes envoyées
+        Console.WriteLine("✅ Villes envoyées à la carte :");
+        foreach (var ville in selectionVilles)
+        {
+            Console.WriteLine($"{ville.Label} - {ville.Latitude}, {ville.Longitude}");
+        }
+
+        await MapService.AjouterMarqueursAsync(selectionVilles);
+    }
+
 
     private void FilterCommunes(ChangeEventArgs e)
     {
