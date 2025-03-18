@@ -1,5 +1,7 @@
 ﻿@inject DatabaseService DatabaseService
 @using Microsoft.AspNetCore.Components.Forms
+@inherits LayoutComponentBase
+
 
 @page "/route-planner"
 
@@ -73,6 +75,10 @@
                        style="border-radius:50px; transition: all 0.3s ease;">
             </div>
         </form>
+
+        <KmCounter />
+
+
     </div>
 
     <!-- Liste des villes filtrées pour l'auto-complétion -->

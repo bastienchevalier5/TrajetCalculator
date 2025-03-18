@@ -1,0 +1,205 @@
+﻿@using System.Timers
+
+<div class="km-counter-container d-flex flex-column align-items-center py-3">
+    <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center justify-content-center bg-secondary rounded-circle p-2" style="width: 36px; height: 36px;">
+            <i class="bi bi-speedometer2 text-white"></i>
+        </div>
+        <h5 class="text-white m-0">Distance totale</h5>
+    </div>
+
+    <div class="slot-machine-counter @(EstEnAnimation ? "animating" : "")" style="margin-top: 10px;">
+        <div class="d-flex align-items-center">
+            @foreach (var chiffre in ChiffresAffichage)
+            {
+                <div class="digit-container bg-transparent border border-secondary" style="width: 30px; height: 50px; overflow: hidden; position: relative; border-radius: 8px; margin: 0 1px;">
+                    <div class="digit-roller" style="position: absolute; width: 100%; transform: translateY(@(chiffre.Position)px);">
+                        @for (int i = 0; i <= 9; i++)
+                        {
+                            <div class="digit d-flex align-items-center justify-content-center" style="height: 50px; color: white; font-size: 22px; font-weight: bold;">@i</div>
+                        }
+                    </div>
+                </div>
+            }
+            <span class="text-white ms-2 fw-bold">km</span>
+        </div>
+    </div>
+
+    <!-- Bouton de test temporaire -->
+    <button @onclick="GenererDistanceAleatoire"
+            class="btn btn-sm btn-outline-secondary mt-3 text-white"
+            style="border-radius: 20px; font-size: 0.8rem;">
+        Tester l'animation
+    </button>
+</div>
+
+@code {
+    [Parameter]
+    public int Distance { get; set; } = 0;
+
+    private int ValeurAffichee { get; set; } = 0;
+    private bool EstEnAnimation { get; set; } = false;
+    private List<ChiffreSlot> ChiffresAffichage { get; set; } = new List<ChiffreSlot>();
+    private Timer? AnimationTimer;
+    private int DernierDistance = 0;
+
+    protected override void OnInitialized()
+    {
+        // Initialiser avec la valeur 0
+        InitialiserAffichage(0);
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Si la distance a changé, déclencher l'animation
+        if (Distance != DernierDistance)
+        {
+            DernierDistance = Distance;
+            DemarrerAnimation(Distance);
+        }
+    }
+
+    // Méthode pour tester l'animation avec une valeur aléatoire
+    private void GenererDistanceAleatoire()
+    {
+        Random random = new Random();
+        int nouvelleDistance = random.Next(1, 100000);
+        DemarrerAnimation(nouvelleDistance);
+    }
+
+    private void InitialiserAffichage(int valeur)
+    {
+        ChiffresAffichage.Clear();
+        string valeurTexte = valeur.ToString();
+
+        foreach (char c in valeurTexte)
+        {
+            if (int.TryParse(c.ToString(), out int chiffre))
+            {
+                ChiffresAffichage.Add(new ChiffreSlot
+                    {
+                        ValeurActuelle = chiffre,
+                        ValeurCible = chiffre,
+                        Position = -chiffre * 50
+                    });
+            }
+        }
+
+        // Assurer un minimum de chiffres (au moins 3)
+        while (ChiffresAffichage.Count < 3)
+        {
+            ChiffresAffichage.Insert(0, new ChiffreSlot
+                {
+                    ValeurActuelle = 0,
+                    ValeurCible = 0,
+                    Position = 0
+                });
+        }
+    }
+
+    private void DemarrerAnimation(int nouvelleDonnee)
+    {
+        if (EstEnAnimation)
+        {
+            // Arrêter l'animation en cours
+            AnimationTimer?.Stop();
+            AnimationTimer?.Dispose();
+            AnimationTimer = null;
+        }
+
+        EstEnAnimation = true;
+        ValeurAffichee = nouvelleDonnee;
+
+        List<ChiffreSlot> nouveauxChiffres = new List<ChiffreSlot>();
+        string valeurCibleTexte = nouvelleDonnee.ToString();
+
+        // Garantir un minimum de 3 chiffres avec des zéros au début
+        valeurCibleTexte = valeurCibleTexte.PadLeft(3, '0');
+
+        // Créer des slots pour chaque chiffre de la valeur cible
+        foreach (char c in valeurCibleTexte)
+        {
+            if (int.TryParse(c.ToString(), out int chiffre))
+            {
+                nouveauxChiffres.Add(new ChiffreSlot
+                    {
+                        ValeurActuelle = Random.Shared.Next(0, 10),
+                        ValeurCible = chiffre,
+                        Position = -Random.Shared.Next(0, 10) * 50,
+                        TempsDAnimation = 800 + Random.Shared.Next(0, 1200)
+                    });
+            }
+        }
+
+        ChiffresAffichage = nouveauxChiffres;
+        StateHasChanged();
+
+        // Démarrer l'animation
+        var tempsDemarrage = DateTime.Now;
+        AnimationTimer = new Timer(16); // ~60fps
+        AnimationTimer.Elapsed += (sender, e) =>
+        {
+            var tempsEcoule = (DateTime.Now - tempsDemarrage).TotalMilliseconds;
+            bool tousTermines = true;
+
+            foreach (var chiffre in ChiffresAffichage)
+            {
+                if (tempsEcoule < chiffre.TempsDAnimation)
+                {
+                    // Animation en cours
+                    double progression = tempsEcoule / chiffre.TempsDAnimation;
+
+                    // Phase initiale rapide - tourne plusieurs fois
+                    if (progression < 0.7)
+                    {
+                        chiffre.Position = -((int)(tempsEcoule * 0.5) % 500);
+                    }
+                    // Phase finale - ralentissement vers la cible
+                    else
+                    {
+                        double proportionRalentissement = (progression - 0.7) / 0.3;
+                        double positionCible = -chiffre.ValeurCible * 50;
+
+                        // Fonction d'easing pour ralentir progressivement
+                        double easeFactor = 1 - Math.Pow(1 - proportionRalentissement, 3);
+                        chiffre.Position = -((tempsEcoule * 0.25) % 500) * (1 - easeFactor) + positionCible * easeFactor;
+                    }
+
+                    tousTermines = false;
+                }
+                else
+                {
+                    // Animation terminée pour ce chiffre
+                    chiffre.Position = -chiffre.ValeurCible * 50;
+                    chiffre.ValeurActuelle = chiffre.ValeurCible;
+                }
+            }
+
+            InvokeAsync(StateHasChanged);
+
+            if (tousTermines)
+            {
+                AnimationTimer?.Stop();
+                AnimationTimer?.Dispose();
+                AnimationTimer = null;
+                EstEnAnimation = false;
+                InvokeAsync(StateHasChanged);
+            }
+        };
+
+        AnimationTimer.Start();
+    }
+
+    public void Dispose()
+    {
+        AnimationTimer?.Dispose();
+    }
+
+    private class ChiffreSlot
+    {
+        public int ValeurActuelle { get; set; }
+        public int ValeurCible { get; set; }
+        public double Position { get; set; }
+        public double TempsDAnimation { get; set; } = 1500;
+    }
+}
