@@ -153,10 +153,8 @@ function addNeonStyles() {
             to { opacity: 0.4; }
         }
 
-        .start-pin .pin-content, .end-pin .pin-content, .middle-pin .pin-content {
-            box-shadow: 0 0 10px #00ffff, 0 0 15px #00ffff;
+        .start-pin, .end-pin, .middle-pin{
             border-radius: 50%;
-            background-color: #00ffff;
             animation: markerPulse 1.5s infinite alternate;
         }
 
