@@ -235,8 +235,12 @@ style="
 
         if (commune != null)
         {
-            waypoint.InseeCode = commune.InseeCode;
+            waypoint.InseeCode = commune.InseeCode; // Assurez-vous que ceci est bien assigné
             waypoint.Label = $"{commune.Label} ({commune.ZipCode})";
+        }
+        else
+        {
+            waypoint.InseeCode = null; // Réinitialiser si la commune n'est pas trouvée
         }
     }
 
@@ -281,17 +285,18 @@ style="
             var intermediaires = new List<string>();
             foreach (var waypoint in Waypoints)
             {
-                if (string.IsNullOrEmpty(waypoint.InseeCode))
+                if (!string.IsNullOrEmpty(waypoint.InseeCode))
                 {
-                    var wpCommune = await DatabaseService.GetCommuneByIdAsync(waypoint.InseeCode);
-                    if (wpCommune != null)
-                    {
-                        intermediaires.Add(waypoint.InseeCode);
-                    }
+                    intermediaires.Add(waypoint.InseeCode);
+                }
+                else
+                {
+                    // Log ou message d'erreur pour indiquer qu'une étape n'est pas valide
+                    Console.WriteLine($"Waypoint {waypoint.Id} has no valid InseeCode.");
                 }
             }
 
-            // Calculer l'itinéraire
+            // Passez les étapes intermédiaires à CalculItineraire
             CalculatedRoute = await CalculItineraire(SelectedDepartureId, intermediaires, SelectedArrivalId);
 
             if (CalculatedRoute == null || CalculatedRoute.Count < 2)
@@ -415,16 +420,23 @@ style="
     }
     private async Task<List<string>> CalculItineraire(string Departure, List<string> Waypoints, string Arrival)
     {
-        if (SelectedDepartureId == null || SelectedArrivalId == null) return new List<string> { "Veuillez sélectionner une ville de départ et une ville d'arrivée." };
+        if (SelectedDepartureId == null || SelectedArrivalId == null)
+            return new List<string> { "Veuillez sélectionner une ville de départ et une ville d'arrivée." };
 
         var departure = await DatabaseService.GetCommuneByIdAsync(Departure);
         var arrival = await DatabaseService.GetCommuneByIdAsync(Arrival);
         var waypoints = new List<Commune>();
 
-        foreach (var waypoint in Waypoints)
+        foreach (var waypointInsee in Waypoints)
         {
-            if (waypoint != null)
-                waypoints.Add(await DatabaseService.GetCommuneByIdAsync(waypoint));
+            if (!string.IsNullOrEmpty(waypointInsee))
+            {
+                var waypointCommune = await DatabaseService.GetCommuneByIdAsync(waypointInsee);
+                if (waypointCommune != null)
+                {
+                    waypoints.Add(waypointCommune);
+                }
+            }
         }
 
         var selectedCommunes = new List<Commune> { departure, arrival };
@@ -437,112 +449,80 @@ style="
 
     public async Task<List<string>> FindOptimalRoute(List<Commune> communes, string start, List<string> required, string end)
     {
-        // Si aucun point intermédiaire, on va direct de start à end
         if (required.Count == 0)
         {
             return Dijkstra(communes, start, end);
         }
 
-        try
+        double minDistance = double.MaxValue;
+        List<string>? bestRoute = null;
+
+        var allPermutations = GetPermutations(required, required.Count).ToList();
+
+        foreach (var perm in allPermutations)
         {
-            double minDistance = double.MaxValue;
-            List<string>? bestRoute = null;
+            List<string> route = new List<string> { start };
+            route.AddRange(perm);
+            route.Add(end);
 
-            // Pour gérer même les cas où il y a de nombreux points intermédiaires,
-            // on limite à un maximum de permutations à essayer
-            var allPermutations = GetPermutations(required, required.Count).ToList();
+            double totalDistance = 0;
+            bool validRoute = true;
 
-            // Si trop de points intermédiaires, on limite à 100 permutations aléatoires
-            if (allPermutations.Count > 100)
+            for (int i = 0; i < route.Count - 1; i++)
             {
-                var random = new Random();
-                allPermutations = allPermutations
-                    .OrderBy(x => random.Next())
-                    .Take(100)
-                    .ToList();
-            }
-
-            foreach (var perm in allPermutations)
-            {
-                List<string> route = new List<string> { start };
-                route.AddRange(perm);
-                route.Add(end);
-
-                double totalDistance = 0;
-                bool validRoute = true;
-
-                for (int i = 0; i < route.Count - 1; i++)
+                var subPath = Dijkstra(communes, route[i], route[i + 1]);
+                if (subPath.Count == 0)
                 {
-                    var subPath = Dijkstra(communes, route[i], route[i + 1]);
-                    if (subPath.Count == 0)
-                    {
-                        validRoute = false;
-                        break;
-                    }
-
-                    // Si ce n'est pas le premier segment, on retire le premier élément
-                    // qui est le même que le dernier du segment précédent
-                    if (i > 0 && subPath.Count > 1)
-                    {
-                        // On retire le premier point car il est déjà dans le chemin
-                        subPath.RemoveAt(0);
-                    }
-
-                    // On ajoute les points de ce segment au chemin global
-                    if (i == 0)
-                    {
-                        // Pour le premier segment, on met tout
-                        totalDistance += subPath.Count - 1;
-                    }
-                    else
-                    {
-                        // Pour les autres segments, le premier point est déjà compté
-                        totalDistance += subPath.Count;
-                    }
+                    validRoute = false;
+                    break;
                 }
 
-                if (validRoute && totalDistance < minDistance)
+                if (i > 0 && subPath.Count > 1)
                 {
-                    minDistance = totalDistance;
+                    subPath.RemoveAt(0);
+                }
 
-                    // Reconstruire le chemin complet
-                    bestRoute = new List<string>();
-                    bestRoute.Add(start);
-
-                    for (int i = 0; i < perm.Count(); i++)
-                    {
-                        var current = perm.ElementAt(i);
-                        var subPath = Dijkstra(communes, i == 0 ? start : perm.ElementAt(i - 1), current);
-
-                        // On ajoute tous les points sauf le premier (qui est déjà dans le chemin)
-                        if (subPath.Count > 1)
-                        {
-                            for (int j = 1; j < subPath.Count; j++)
-                            {
-                                bestRoute.Add(subPath[j]);
-                            }
-                        }
-                    }
-
-                    // Ajouter le chemin vers la destination finale
-                    var finalPath = Dijkstra(communes, perm.Last(), end);
-                    if (finalPath.Count > 1)
-                    {
-                        for (int j = 1; j < finalPath.Count; j++)
-                        {
-                            bestRoute.Add(finalPath[j]);
-                        }
-                    }
+                if (i == 0)
+                {
+                    totalDistance += subPath.Count - 1;
+                }
+                else
+                {
+                    totalDistance += subPath.Count;
                 }
             }
 
-            return bestRoute ?? new List<string>();
+            if (validRoute && totalDistance < minDistance)
+            {
+                minDistance = totalDistance;
+                bestRoute = new List<string> { start };
+
+                for (int i = 0; i < perm.Count(); i++)
+                {
+                    var current = perm.ElementAt(i);
+                    var subPath = Dijkstra(communes, i == 0 ? start : perm.ElementAt(i - 1), current);
+
+                    if (subPath.Count > 1)
+                    {
+                        for (int j = 1; j < subPath.Count; j++)
+                        {
+                            bestRoute.Add(subPath[j]);
+                        }
+                    }
+                }
+
+                var finalPath = Dijkstra(communes, perm.Last(), end);
+                if (finalPath.Count > 1)
+                {
+                    for (int j = 1; j < finalPath.Count; j++)
+                    {
+                        bestRoute.Add(finalPath[j]);
+                    }
+                }
+            }
         }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Erreur dans FindOptimalRoute: {ex.Message}";
-            return new List<string>();
-        }
+
+        return bestRoute ?? new List<string>();
     }
 
     public List<string> Dijkstra(List<Commune> selectedCommunes, string start, string end)
