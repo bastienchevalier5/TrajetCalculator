@@ -51,8 +51,8 @@ function initMap() {
     var middlePin = L.divIcon({
         className: 'middle-pin',
         html: '<div class="pin-content"></div>',
-        iconSize: [10, 10], // Taille de l'icône
-        iconAnchor: [5, 5], // Point d'ancrage
+        iconSize: [15, 15], // Taille de l'icône
+        iconAnchor: [7.5, 7.5], // Point d'ancrage
         popupAnchor: [0, -35] // Position du popup
     });
 
