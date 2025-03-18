@@ -108,9 +108,9 @@ h1:focus {
 .middle-pin {
     width: 5px;
     height: 5px;
-    background-color: #fff; /* Couleur du fond */
+    background-color: #0D6EFD; /* Couleur du fond */
     border-radius: 50%; /* Forme ronde */
-    box-shadow: 0px 0px 28px 8px #fff;
+    box-shadow: 0px 0px 28px 8px #0D6EFD;
 }
 
 .end-pin {
