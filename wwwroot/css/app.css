@@ -96,7 +96,7 @@ h1:focus {
         cursor: grab;
     }
 
-.starter-pin {
+.start-pin {
     width: 5px;
     height: 5px;
     background-color: #0d6efd; /* Couleur du fond */
@@ -104,6 +104,30 @@ h1:focus {
     border: solid #fff 4px;
     box-shadow: 0px 0px 28px 8px #0D6EFD;
 }
+
+.middle-pin {
+    width: 5px;
+    height: 5px;
+    background-color: #0D6EFD; /* Couleur du fond */
+    border-radius: 50%; /* Forme ronde */
+    box-shadow: 0px 0px 28px 8px #0D6EFD;
+}
+
+.end-pin {
+    width: 5px;
+    height: 5px;
+    background-color: #0d6efd; /* Couleur du fond */
+    border-radius: 50%; /* Forme ronde */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px;
+    box-shadow: 0px 0px 28px 8px #0D6EFD;
+}
+
+
+
+
 
 
 /* Style pour les inputs au focus */
