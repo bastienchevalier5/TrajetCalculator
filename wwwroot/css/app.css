@@ -96,7 +96,7 @@ h1:focus {
         cursor: grab;
     }
 
-.custom-pin {
+.start-pin {
     width: 5px;
     height: 5px;
     background-color: #0d6efd; /* Couleur du fond */
@@ -104,3 +104,72 @@ h1:focus {
     border: solid #fff 4px;
     box-shadow: 0px 0px 28px 8px #0D6EFD;
 }
+
+.middle-pin {
+    width: 5px;
+    height: 5px;
+    background-color: #0D6EFD; /* Couleur du fond */
+    border-radius: 50%; /* Forme ronde */
+    box-shadow: 0px 0px 28px 8px #0D6EFD;
+}
+
+.end-pin {
+    width: 5px;
+    height: 5px;
+    background-color: #0d6efd; /* Couleur du fond */
+    border-radius: 50%; /* Forme ronde */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px;
+    box-shadow: 0px 0px 28px 8px #0D6EFD;
+}
+
+
+
+
+
+
+/* Style pour les inputs au focus */
+.input-route:focus {
+    outline: none;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.3);
+    background-color: rgba(13, 202, 240, 0.05) !important;
+}
+
+    /* Animation subtile au focus */
+    .input-route:focus::placeholder {
+        transform: translateX(5px);
+        opacity: 0.7;
+        transition: all 0.3s ease;
+    }
+
+/* Style pour les inputs avec texte */
+.input-route:not(:placeholder-shown) {
+    border-color: #0d6efd !important;
+}
+
+/* Transition pour le changement de couleur */
+.input-route {
+    transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+}
+
+/* Style personnalisé pour la scrollbar */
+.route-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.route-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.route-container::-webkit-scrollbar-thumb {
+    background: rgba(108, 117, 125, 0.5);
+    border-radius: 10px;
+}
+
+    .route-container::-webkit-scrollbar-thumb:hover {
+        background: rgba(108, 117, 125, 0.8);
+    }

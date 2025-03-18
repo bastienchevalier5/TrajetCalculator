@@ -32,15 +32,31 @@ function initMap() {
     maxZoom: 19
   }).addTo(map);
 
-    var customPin = L.divIcon({
-        className: 'custom-pin',
+    var startPin = L.divIcon({
+        className: 'start-pin',
         html: '<div class="pin-content"></div>',
         iconSize: [20, 20], // Taille de l'icône
         iconAnchor: [10, 10], // Point d'ancrage
         popupAnchor: [0, -35] // Position du popup
     });
 
-    L.marker([48.8566, 2.3522], { icon: customPin }).addTo(map)
+    var endPin = L.divIcon({
+        className: 'end-pin',
+        html: '<div class="pin-content"><i class="bi bi-flag-fill text-white m-0"></i></div>',
+        iconSize: [20, 20], // Taille de l'icône
+        iconAnchor: [10, 10], // Point d'ancrage
+        popupAnchor: [0, -35] // Position du popup
+    });
+
+    var middlePin = L.divIcon({
+        className: 'middle-pin',
+        html: '<div class="pin-content"></div>',
+        iconSize: [10, 10], // Taille de l'icône
+        iconAnchor: [5, 5], // Point d'ancrage
+        popupAnchor: [0, -35] // Position du popup
+    });
+
+    L.marker([48.8566, 2.3522], { icon: middlePin }).addTo(map)
         .bindPopup("Paris")
         .openPopup();
 
