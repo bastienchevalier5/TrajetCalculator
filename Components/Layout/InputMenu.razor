@@ -95,13 +95,29 @@
 
     private void FilterCommunes(ChangeEventArgs e)
     {
-        string searchText = e.Value?.ToString() ?? "";
+        string searchText = e.Value?.ToString()?.Trim() ?? "";
 
-        // Filtrer les communes qui commencent par le texte saisi
-        FilteredCommunes = AllCommunes
-            .Where(c => c.Label.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrEmpty(searchText))
+        {
+            FilteredCommunes = AllCommunes;
+            return;
+        }
+
+        // Commence par le texte saisi
+        var startsWith = AllCommunes
+            .Where(c => c.Label.StartsWith(searchText, StringComparison.OrdinalIgnoreCase))
             .ToList();
+
+        // Contient le texte saisi mais ne commence pas par celui-ci
+        var contains = AllCommunes
+            .Where(c => c.Label.Contains(searchText, StringComparison.OrdinalIgnoreCase) &&
+                        !startsWith.Contains(c))
+            .ToList();
+
+        // Fusionner les résultats
+        FilteredCommunes = startsWith.Concat(contains).ToList();
     }
+
 
     private void AddWaypoint()
     {
