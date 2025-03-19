@@ -359,13 +359,16 @@ style="
 
     private async Task MettreAJourCarte()
     {
+        // Réinitialiser la liste des villes sélectionnées
         selectionVilles.Clear();
 
-        // Assurer que AllCommunes est bien rempli
+        // S'assurer que AllCommunes est bien chargé et trié
         if (AllCommunes == null || AllCommunes.Count == 0)
         {
             Console.WriteLine("❌ Erreur : AllCommunes est vide !");
-            return;
+            // Essayer de recharger la liste si elle est vide
+            AllCommunes = (await DatabaseService.GetCommunesAsync()).OrderBy(c => c.Label).ToList();
+            if (AllCommunes.Count == 0) return; // Si toujours vide, abandonner
         }
 
         // Ajouter la ville de départ
@@ -375,7 +378,7 @@ style="
             if (depart != null) selectionVilles.Add(depart);
         }
 
-        // Ajouter les étapes intermédiaires
+        // Ajouter les étapes intermédiaires dans l'ordre de la liste Waypoints
         foreach (var waypoint in Waypoints)
         {
             if (!string.IsNullOrEmpty(waypoint.InseeCode))
@@ -405,7 +408,15 @@ style="
             Console.WriteLine($"{ville.Label} - {ville.Latitude}, {ville.Longitude}");
         }
 
+        // Maintenant nous avons une liste ordonnée des villes pour l'itinéraire
         await MapService.AjouterMarqueursAsync(selectionVilles);
+
+        // Optionnel : calcul et affichage de l'itinéraire sur la carte
+        if (CalculatedRoute != null && CalculatedRoute.Route.Count > 0)
+        {
+            // Utilisez CalculatedRoute.Route qui contient déjà l'ordre optimal des villes
+            await MapService.AjouterMarqueursAsync(CalculatedRoute.Route);
+        }
     }
 
     private void FilterCommunes(string searchText)

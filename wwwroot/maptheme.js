@@ -1,6 +1,11 @@
 
 // Variables globales
 var map;
+var completePathLayer = null;
+var completeGlowLayer = null;
+var locations = []; // Déplacé en variable globale pour être accessible par addPins
+var markers = []; // Pour stocker les marqueurs actifs
+var customSound; // Pour l'effet sonore
 
 // Fonction pour initialiser la carte
 function initMap() {
@@ -27,122 +32,17 @@ function initMap() {
         attribution: '© CartoDB & OpenStreetMap',
         maxZoom: 19
     }).addTo(map);
-    // Définir les icônes personnalisées
-    var startPin = L.divIcon({
-        className: 'start-pin',
-        html: '<div class="pin-content"></div>',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
-        popupAnchor: [0, -35]
-    });
-    var endPin = L.divIcon({
-        className: 'end-pin',
-        html: '<div class="pin-content"><i class="bi bi-flag-fill text-white m-0"></i></div>',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
-        popupAnchor: [0, -35]
-    });
-    var middlePin = L.divIcon({
-        className: 'middle-pin',
-        html: '<div class="pin-content"></div>',
-        iconSize: [15, 15], // Taille de l'icône
-        iconAnchor: [7.5, 7.5], // Point d'ancrage
-        popupAnchor: [0, -35] // Position du popup
-    });
 
-    // Points de l'itinéraire avec des informations supplémentaires
-    var locations = [
-        {
-            latLng: [48.8566, 2.3522],
-            name: "Paris",
-            icon: startPin,
-            info: "Départ de l'itinéraire"
-        },
-        {
-            latLng: [45.7640, 4.8357],
-            name: "Lyon",
-            icon: middlePin,
-            info: "Étape 1"
-        },
-        {
-            latLng: [43.2965, 5.3698],
-            name: "Marseille",
-            icon: middlePin,
-            info: "Étape 2"
-        },
-        {
-            latLng: [44.8378, -0.5792],
-            name: "Bordeaux",
-            icon: endPin,
-            info: "Arrivée"
-        }
-    ];
+    // Créer les sons de sabre laser
+    customSound = createCustomSound('./assets/sounds/lightSaber.mp4');
 
-    // Créer les popups personnalisés et les ajouter à la carte
-    var markers = locations.map(function (loc, index) {
-        // Créer le contenu du popup avec HTML personnalisé
-        var popupContent = createCustomPopupContent(loc, index);
-
-        // Créer le marqueur avec le popup personnalisé
-        return L.marker(loc.latLng, { icon: loc.icon })
-            .bindPopup(popupContent, {
-                className: 'custom-popup',
-                maxWidth: 300,
-                closeButton: false
-            });
-    });
-
-    // Ajouter seulement le premier marqueur au début
-    markers[0].addTo(map).openPopup();
+    // Créer les marqueurs et dessiner l'itinéraire initial
+    drawRoute(locations);
 
     // Ajouter le sélecteur de thème
     if (typeof addCartoDBThemeSelector === 'function') {
         addCartoDBThemeSelector();
     }
-
-    // Créer les sons de sabre laser
-    var customSound = createCustomSound('./assets/sounds/lightSaber.mp4');
-
-    // Stocker les chemins complets avant l'animation
-    var completePath = [];
-    var completePathLayer = null;
-    var completeGlowLayer = null;
-
-    // Créer le chemin complet (invisible au début)
-    function createCompletePath() {
-        // Extraire tous les points de l'itinéraire
-        var allPoints = locations.map(loc => loc.latLng);
-
-        // Créer le chemin principal (invisible initialement)
-        completePathLayer = L.polyline(allPoints, {
-            color: '#0d6efd',
-            weight: 3,
-            opacity: 0,
-            className: 'neon-path complete-path'
-        }).addTo(map);
-
-        // Créer l'effet de lueur (invisible initialement)
-        completeGlowLayer = L.polyline(allPoints, {
-            color: '#0d6efd',
-            weight: 6,
-            opacity: 0,
-            className: 'neon-glow complete-glow'
-        }).addTo(map);
-
-        // S'assurer que la lueur est en arrière-plan
-        completeGlowLayer.bringToBack();
-
-        // Adapter la vue pour voir tout l'itinéraire
-        map.fitBounds(L.latLngBounds(allPoints));
-
-        return allPoints;
-    }
-
-    // Créer le chemin complet
-    completePath = createCompletePath();
-
-    // Animation du chemin segment par segment
-    animatePathSegmentBySegment(locations, markers, customSound, completePath, completePathLayer, completeGlowLayer);
 
     // Gérer les événements de zoom
     map.on('zoomend moveend', function () {
@@ -151,6 +51,39 @@ function initMap() {
             completePathLayer.redraw();
             completeGlowLayer.redraw();
         }
+    });
+}
+
+// Fonction pour créer une icône de départ
+function createStartPin() {
+    return L.divIcon({
+        className: 'start-pin',
+        html: '<div class="pin-content"></div>',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+        popupAnchor: [0, -35]
+    });
+}
+
+// Fonction pour créer une icône d'arrivée
+function createEndPin() {
+    return L.divIcon({
+        className: 'end-pin',
+        html: '<div class="pin-content"><i class="bi bi-flag-fill text-white m-0"></i></div>',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+        popupAnchor: [0, -35]
+    });
+}
+
+// Fonction pour créer une icône d'étape intermédiaire
+function createMiddlePin() {
+    return L.divIcon({
+        className: 'middle-pin',
+        html: '<div class="pin-content"></div>',
+        iconSize: [15, 15],
+        iconAnchor: [7.5, 7.5],
+        popupAnchor: [0, -35]
     });
 }
 
@@ -164,7 +97,7 @@ function createCustomPopupContent(location, index) {
                 <span class="popup-info">${location.info}</span>
             </div>
             <div class="popup-footer">
-                <span class="popup-position">Position: ${index + 1}/${4}</span>
+                <span class="popup-position">Position: ${index + 1}/${locations.length}</span>
             </div>
         </div>
     `;
@@ -202,23 +135,88 @@ function createCustomSound(audioFilePath) {
     };
 }
 
+// Fonction pour dessiner l'itinéraire complet et ses marqueurs
+function drawRoute(routeLocations) {
+    // Nettoyer la carte des marqueurs et chemins existants
+    clearMapLayers();
+
+    // Créer les nouveaux marqueurs
+    markers = routeLocations.map(function (loc, index) {
+        // Créer le contenu du popup avec HTML personnalisé
+        var popupContent = createCustomPopupContent(loc, index);
+
+        // Créer le marqueur avec le popup personnalisé
+        return L.marker(loc.latLng, { icon: loc.icon })
+            .bindPopup(popupContent, {
+                className: 'custom-popup',
+                maxWidth: 300,
+                closeButton: false
+            });
+    });
+
+    // Ajouter tous les marqueurs à la carte
+    markers.forEach(marker => marker.addTo(map));
+
+    // Ouvrir le popup du premier marqueur
+    if (markers.length > 0) {
+        markers[0].openPopup();
+    }
+
+    // Extraire les points pour le chemin
+    var pathPoints = routeLocations.map(loc => loc.latLng);
+
+    // Adapter la vue pour voir tout l'itinéraire
+    if (pathPoints.length > 1) {
+        map.fitBounds(L.latLngBounds(pathPoints));
+    }
+
+    // Animer le chemin
+    animatePathSegmentBySegment(routeLocations, markers, customSound, pathPoints);
+}
+
+// Fonction pour nettoyer la carte des marqueurs et chemins existants
+function clearMapLayers() {
+    // Supprimer les marqueurs existants
+    markers.forEach(marker => {
+        if (map.hasLayer(marker)) {
+            map.removeLayer(marker);
+        }
+    });
+    markers = [];
+
+    // Supprimer les chemins existants
+    if (completePathLayer && map.hasLayer(completePathLayer)) {
+        map.removeLayer(completePathLayer);
+    }
+    if (completeGlowLayer && map.hasLayer(completeGlowLayer)) {
+        map.removeLayer(completeGlowLayer);
+    }
+
+    // Supprimer toutes les animations de segment en cours
+    map.eachLayer(function (layer) {
+        if (layer._path && layer._path.classList.contains('segment-animation')) {
+            map.removeLayer(layer);
+        }
+    });
+}
+
 // Fonction pour animer le chemin segment par segment
-function animatePathSegmentBySegment(locations, markers, customSound, completePath, completePathLayer, completeGlowLayer) {
+function animatePathSegmentBySegment(routeLocations, routeMarkers, sound, pathPoints) {
     var currentSegment = 0;
-    var totalSegments = locations.length - 1;
+    var totalSegments = routeLocations.length - 1;
     var animationDuration = 1.73; // Durée en secondes
+
+    // Ne rien faire s'il n'y a pas assez de points
+    if (totalSegments <= 0) return;
 
     // Créer une fonction pour révéler progressivement le chemin complet
     function revealNextSegment() {
         if (currentSegment >= totalSegments) return;
 
-        // Ajouter le marqueur suivant
-        markers[currentSegment + 1].addTo(map).openPopup();
-
         // Créer un sous-chemin temporaire pour l'animation
         var segmentPoints = [
-            locations[currentSegment].latLng,
-            locations[currentSegment + 1].latLng
+            routeLocations[currentSegment].latLng,
+            routeLocations[currentSegment + 1].latLng
         ];
 
         // Animation temporaire du segment
@@ -230,7 +228,7 @@ function animatePathSegmentBySegment(locations, markers, customSound, completePa
         }).addTo(map);
 
         // Jouer le son
-        customSound.play();
+        sound.play();
 
         // Après l'animation, supprimer le chemin temporaire et révéler la partie correspondante du chemin complet
         setTimeout(function () {
@@ -240,7 +238,7 @@ function animatePathSegmentBySegment(locations, markers, customSound, completePa
             // Révéler progressivement le chemin complet
             var visiblePath = [];
             for (var i = 0; i <= currentSegment + 1; i++) {
-                visiblePath.push(locations[i].latLng);
+                visiblePath.push(routeLocations[i].latLng);
             }
 
             // Remplacer le chemin complet par la partie visible
@@ -284,56 +282,56 @@ function animatePathSegmentBySegment(locations, markers, customSound, completePa
 
 // Fonction pour ajouter un sélecteur de thème CartoDB
 function addCartoDBThemeSelector() {
-          // Créer un div pour le sélecteur
-          var selectorDiv = document.createElement('div');
-selectorDiv.style.position = 'absolute';
-selectorDiv.style.bottom = '10px';
-selectorDiv.style.left = '10px';
-selectorDiv.style.zIndex = '1000';
-selectorDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
-selectorDiv.style.padding = '5px';
-selectorDiv.style.borderRadius = '4px';
+    // Créer un div pour le sélecteur
+    var selectorDiv = document.createElement('div');
+    selectorDiv.style.position = 'absolute';
+    selectorDiv.style.bottom = '10px';
+    selectorDiv.style.left = '10px';
+    selectorDiv.style.zIndex = '1000';
+    selectorDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+    selectorDiv.style.padding = '5px';
+    selectorDiv.style.borderRadius = '4px';
 
-// Créer le sélecteur
-var select = document.createElement('select');
-select.style.backgroundColor = '#333';
-select.style.color = 'white';
-select.style.border = '1px solid #555';
-select.style.padding = '2px';
-select.style.fontSize = '12px';
+    // Créer le sélecteur
+    var select = document.createElement('select');
+    select.style.backgroundColor = '#333';
+    select.style.color = 'white';
+    select.style.border = '1px solid #555';
+    select.style.padding = '2px';
+    select.style.fontSize = '12px';
 
-// Ajouter les options de thème CartoDB uniquement
-var themes = {
-  'dark_all': 'CartoDB Dark',
-'dark_nolabels': 'CartoDB Dark No Labels',
-'light_all': 'CartoDB Light',
-'light_nolabels': 'CartoDB Light No Labels',
-'rastertiles/voyager_nolabels': 'CartoDB Voyager No Labels',
-'rastertiles/voyager': 'CartoDB Voyager',
-'rastertiles/voyager_labels_under': 'CartoDB Voyager Labels Under'
-          };
+    // Ajouter les options de thème CartoDB uniquement
+    var themes = {
+        'dark_all': 'CartoDB Dark',
+        'dark_nolabels': 'CartoDB Dark No Labels',
+        'light_all': 'CartoDB Light',
+        'light_nolabels': 'CartoDB Light No Labels',
+        'rastertiles/voyager_nolabels': 'CartoDB Voyager No Labels',
+        'rastertiles/voyager': 'CartoDB Voyager',
+        'rastertiles/voyager_labels_under': 'CartoDB Voyager Labels Under'
+    };
 
-for (var value in themes) {
-              var option = document.createElement('option');
-option.value = value;
-option.text = themes[value];
-select.appendChild(option);
-          }
+    for (var value in themes) {
+        var option = document.createElement('option');
+        option.value = value;
+        option.text = themes[value];
+        select.appendChild(option);
+    }
 
-// Définir l'option par défaut sur "dark_all"
-select.value = 'dark_all';
+    // Définir l'option par défaut sur "dark_all"
+    select.value = 'dark_all';
 
-// Ajouter l'événement de changement
-select.addEventListener('change', function () {
-  changeCartoDBTheme(this.value);
-          });
+    // Ajouter l'événement de changement
+    select.addEventListener('change', function () {
+        changeCartoDBTheme(this.value);
+    });
 
-// Ajouter le sélecteur au div
-selectorDiv.appendChild(select);
+    // Ajouter le sélecteur au div
+    selectorDiv.appendChild(select);
 
-// Ajouter le div à la page
-document.body.appendChild(selectorDiv);
-      }
+    // Ajouter le div à la page
+    document.body.appendChild(selectorDiv);
+}
 
 // Fonction pour ajuster les couleurs du texte en fonction du thème
 function adjustTextColors(theme) {
@@ -343,8 +341,8 @@ function adjustTextColors(theme) {
     // Définir les couleurs en fonction du thème
     var isDarkTheme = theme.includes('Dark');
     var textColor = isDarkTheme ? '#ffffff' : '#333333';
-    var borderColor = isDarkTheme ? 'rgba(0, 0, 0, 0.3)':'rgba(255, 255, 255, 0.3)' ;
-    var containerBg = isDarkTheme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)' ;
+    var borderColor = isDarkTheme ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)';
+    var containerBg = isDarkTheme ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
 
     // Mettre à jour tous les inputs
     inputs.forEach(function (input) {
@@ -353,83 +351,71 @@ function adjustTextColors(theme) {
     });
 
     // Mettre à jour le conteneur principal
-    var routeContainer = document.querySelector('.route-container').parentElement;
-    if (routeContainer) {
-        routeContainer.style.background = containerBg;
-        routeContainer.style.borderColor = borderColor;
+    var routeContainer = document.querySelector('.route-container');
+    if (routeContainer && routeContainer.parentElement) {
+        routeContainer.parentElement.style.background = containerBg;
+        routeContainer.parentElement.style.borderColor = borderColor;
     }
 }
+
 // Fonction pour changer le thème CartoDB
 function changeCartoDBTheme(theme) {
-  // Supprimer les couches existantes
-  map.eachLayer(function (layer) {
-    if (layer instanceof L.TileLayer) {
-      map.removeLayer(layer);
-    }
-  });
+    // Supprimer les couches existantes
+    map.eachLayer(function (layer) {
+        if (layer instanceof L.TileLayer) {
+            map.removeLayer(layer);
+        }
+    });
 
-// Construire l'URL pour CartoDB
-var tileUrl = `https://{s}.basemaps.cartocdn.com/${theme}/{z}/{x}/{y}{r}.png`;
+    // Construire l'URL pour CartoDB
+    var tileUrl = `https://{s}.basemaps.cartocdn.com/${theme}/{z}/{x}/{y}{r}.png`;
 
-// Ajouter la nouvelle couche
-L.tileLayer(tileUrl, {
-  attribution: '&copy; <a href="https://carto.com/attributions">CartoDB</a> & <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-maxZoom: 19
-}).addTo(map);
+    // Ajouter la nouvelle couche
+    L.tileLayer(tileUrl, {
+        attribution: '&copy; <a href="https://carto.com/attributions">CartoDB</a> & <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19
+    }).addTo(map);
+
     adjustTextColors(theme);
 }
 
+// Fonction appelée depuis C# pour mettre à jour les points et recalculer l'itinéraire
 function addPins(villes) {
     if (!map) {
         console.error("La carte n'est pas encore initialisée !");
         return;
     }
 
-    var startPin = L.divIcon({
-        className: 'start-pin',
-        html: '<div class="pin-content"></div>',
-        iconSize: [20, 20], // Taille de l'icône
-        iconAnchor: [10, 10], // Point d'ancrage
-        popupAnchor: [0, -35] // Position du popup
-    });
-
-    var endPin = L.divIcon({
-        className: 'end-pin',
-        html: '<div class="pin-content"><i class="bi bi-flag-fill text-white m-0"></i></div>',
-        iconSize: [20, 20], // Taille de l'icône
-        iconAnchor: [10, 10], // Point d'ancrage
-        popupAnchor: [0, -35] // Position du popup
-    });
-
-    var middlePin = L.divIcon({
-        className: 'middle-pin',
-        html: '<div class="pin-content"></div>',
-        iconSize: [10, 10], // Taille de l'icône
-        iconAnchor: [5, 5], // Point d'ancrage
-        popupAnchor: [0, -35] // Position du popup
-    });
-
-    
-
-    map.eachLayer(function (layer) {
-        if (layer instanceof L.Marker) {
-            map.removeLayer(layer);
-        }
-    });
+    // Convertir les villes C# en format pour notre carte
+    var newLocations = [];
 
     villes.forEach((ville, index) => {
         let iconType;
+        let infoType;
+
         if (index === 0) {
-            iconType = startPin;  
+            iconType = createStartPin();
+            infoType = "Départ de l'itinéraire";
         } else if (index === villes.length - 1) {
-            iconType = endPin;   
+            iconType = createEndPin();
+            infoType = "Arrivée";
         } else {
-            iconType = middlePin; 
+            iconType = createMiddlePin();
+            infoType = `Étape ${index}`;
         }
 
-        L.marker([ville.latitude, ville.longitude], { icon: iconType })
-            .addTo(map)
-            .bindPopup(ville.label);
+        newLocations.push({
+            latLng: [ville.latitude, ville.longitude],
+            name: ville.label,
+            icon: iconType,
+            info: infoType
+        });
     });
+
+    // Mettre à jour la variable globale locations
+    locations = newLocations;
+
+    // Dessiner le nouvel itinéraire
+    drawRoute(locations);
 }
 
