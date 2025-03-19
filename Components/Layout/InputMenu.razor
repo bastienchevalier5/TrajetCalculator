@@ -402,7 +402,6 @@ style="
             return;
         }
 
-        // Debug : Afficher les villes envoyées
         Console.WriteLine("✅ Villes envoyées à la carte :");
         foreach (var ville in selectionVilles)
         {
@@ -423,18 +422,15 @@ style="
             return;
         }
 
-        // Commence par le texte saisi
         var startsWith = AllCommunes
             .Where(c => c.Label.StartsWith(searchText, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        // Contient le texte saisi mais ne commence pas par celui-ci
         var contains = AllCommunes
             .Where(c => c.Label.Contains(searchText, StringComparison.OrdinalIgnoreCase) &&
                         !startsWith.Contains(c))
             .ToList();
 
-        // Fusionner les résultats
         FilteredCommunes = startsWith.Concat(contains).Take(50).ToList(); // Limiter pour des raisons de performance
     }
 
@@ -455,167 +451,289 @@ style="
         public string Label { get; set; } = "";
         public string? InseeCode { get; set; }
     }
-    private async Task<List<string>> CalculItineraire(string Departure, List<string> Waypoints, string Arrival)
+
+    private async Task<List<string>> CalculItineraire(string departure, List<string> waypoints, string arrival)
     {
-        if (SelectedDepartureId == null || SelectedArrivalId == null)
+        if (string.IsNullOrEmpty(departure) || string.IsNullOrEmpty(arrival))
             return new List<string> { "Veuillez sélectionner une ville de départ et une ville d'arrivée." };
 
-        var departure = await DatabaseService.GetCommuneByIdAsync(Departure);
-        var arrival = await DatabaseService.GetCommuneByIdAsync(Arrival);
-        var waypoints = new List<Commune>();
+        var departureCommune = await DatabaseService.GetCommuneByIdAsync(departure);
+        var arrivalCommune = await DatabaseService.GetCommuneByIdAsync(arrival);
 
-        foreach (var waypointInsee in Waypoints)
+        if (departureCommune == null || arrivalCommune == null)
+            return new List<string> { "Communes de départ ou d'arrivée introuvables." };
+
+        var waypointCommunes = new List<Commune>();
+        foreach (var waypointId in waypoints)
         {
-            if (!string.IsNullOrEmpty(waypointInsee))
+            if (!string.IsNullOrEmpty(waypointId))
             {
-                var waypointCommune = await DatabaseService.GetCommuneByIdAsync(waypointInsee);
-                if (waypointCommune != null)
+                var commune = await DatabaseService.GetCommuneByIdAsync(waypointId);
+                if (commune != null)
                 {
-                    waypoints.Add(waypointCommune);
+                    waypointCommunes.Add(commune);
                 }
             }
         }
 
-        var selectedCommunes = new List<Commune> { departure, arrival };
-        selectedCommunes.AddRange(waypoints);
+        var allCommunes = new List<Commune>();
+        allCommunes.Add(departureCommune);
+        allCommunes.AddRange(waypointCommunes);
+        allCommunes.Add(arrivalCommune);
 
-        var shortestPath = await FindOptimalRoute(selectedCommunes, departure.Label, waypoints.Select(v => v.Label).ToList(), arrival.Label);
+        var distanceMatrix = BuildDistanceMatrix(allCommunes);
 
-        return shortestPath;
+        if (waypointCommunes.Count == 0)
+        {
+            return ShortestPath(distanceMatrix, departureCommune.Label, arrivalCommune.Label);
+        }
+        else
+        {
+            return FindOptimalRouteWithWaypoints(
+                distanceMatrix,
+                departureCommune.Label,
+                waypointCommunes.Select(w => w.Label).ToList(),
+                arrivalCommune.Label);
+        }
     }
 
-    public async Task<List<string>> FindOptimalRoute(List<Commune> communes, string start, List<string> waypoints, string end)
+    private Dictionary<string, Dictionary<string, double>> BuildDistanceMatrix(List<Commune> communes)
     {
-        if (waypoints.Count == 0)
+        var matrix = new Dictionary<string, Dictionary<string, double>>();
+
+        foreach (var from in communes)
         {
-            return Dijkstra(communes, start, end);
+            matrix[from.Label] = new Dictionary<string, double>();
+
+            foreach (var to in communes)
+            {
+                if (from.Label == to.Label)
+                {
+                    matrix[from.Label][to.Label] = 0;
+                }
+                else
+                {
+                    matrix[from.Label][to.Label] = CalculDistanceVille(from, to);
+                }
+            }
         }
 
-        double minDistance = double.MaxValue;
+        return matrix;
+    }
+
+    private List<string> ShortestPath(
+        Dictionary<string, Dictionary<string, double>> distanceMatrix,
+        string start,
+        string end)
+    {
+        if (start == end)
+            return new List<string> { start };
+
+        var distances = new Dictionary<string, double>();
+        var previous = new Dictionary<string, string>();
+        var unvisited = new HashSet<string>();
+
+        foreach (var node in distanceMatrix.Keys)
+        {
+            distances[node] = node == start ? 0 : double.MaxValue;
+            unvisited.Add(node);
+        }
+
+        while (unvisited.Count > 0)
+        {
+            string current = null;
+            double minDistance = double.MaxValue;
+
+            foreach (var node in unvisited)
+            {
+                if (distances[node] < minDistance)
+                {
+                    current = node;
+                    minDistance = distances[node];
+                }
+            }
+
+            if (current == null || current == end || minDistance == double.MaxValue)
+                break;
+
+            unvisited.Remove(current);
+
+            foreach (var neighbor in distanceMatrix[current].Keys)
+            {
+                if (!unvisited.Contains(neighbor))
+                    continue;
+
+                double alt = distances[current] + distanceMatrix[current][neighbor];
+                if (alt < distances[neighbor])
+                {
+                    distances[neighbor] = alt;
+                    previous[neighbor] = current;
+                }
+            }
+        }
+
+        return ReconstructPath(previous, start, end);
+    }
+
+    private List<string> FindOptimalRouteWithWaypoints(
+        Dictionary<string, Dictionary<string, double>> distanceMatrix,
+        string start,
+        List<string> waypoints,
+        string end)
+    {
+        if (waypoints.Count == 0)
+            return ShortestPath(distanceMatrix, start, end);
+
+        double minTotalDistance = double.MaxValue;
         List<string> bestRoute = null;
 
-        // Generate all possible orders of waypoints
-        var allPermutations = GetPermutations(waypoints, waypoints.Count).ToList();
-
-        foreach (var perm in allPermutations)
+        foreach (var permutation in GetPermutations(waypoints, waypoints.Count))
         {
-            List<string> route = new List<string> { start };
-            route.AddRange(perm);
-            route.Add(end);
-
+            var waypointsList = permutation.ToList();
+            var route = new List<string>();
             double totalDistance = 0;
-            List<string> currentPath = new List<string>();
-            bool validRoute = true;
+            string currentPoint = start;
+            bool isValidRoute = true;
 
-            // Compute path for each segment
-            for (int i = 0; i < route.Count - 1; i++)
+            route.Add(start);
+
+            foreach (var waypoint in waypointsList)
             {
-                var subPath = Dijkstra(communes, route[i], route[i + 1]);
-                if (subPath.Count == 0)
+                var segment = ShortestPathDirect(distanceMatrix, currentPoint, waypoint);
+
+                if (segment.Count == 0)
                 {
-                    validRoute = false;
+                    isValidRoute = false;
                     break;
                 }
 
-                if (i > 0) subPath.RemoveAt(0);
-
-                currentPath.AddRange(subPath);
-                totalDistance += subPath.Count - 1;
-            }
-
-            if (validRoute && totalDistance < minDistance)
-            {
-                minDistance = totalDistance;
-                bestRoute = new List<string>(currentPath);
-            }
-        }
-
-        return bestRoute ?? new List<string> { "No valid route found" };
-    }
-
-    public List<string> Dijkstra(List<Commune> selectedCommunes, string start, string end)
-    {
-        try
-        {
-            var startCommune = selectedCommunes.FirstOrDefault(c => c.Label == start);
-            var endCommune = selectedCommunes.FirstOrDefault(c => c.Label == end);
-
-            if (startCommune == null || endCommune == null)
-            {
-                return new List<string>();
-            }
-
-            var distances = new Dictionary<string, double>();
-            var previous = new Dictionary<string, string>();
-            var pq = new SortedSet<(double, string)>();
-
-            foreach (var commune in selectedCommunes)
-            {
-                distances[commune.Label] = double.MaxValue;
-            }
-            distances[start] = 0;
-            pq.Add((0, start));
-
-            while (pq.Count > 0)
-            {
-                var min = pq.Min;
-                var (dist, current) = min;
-                pq.Remove(min);
-
-                if (current == end) break;
-
-                var currentCommune = selectedCommunes.FirstOrDefault(v => v.Label == current);
-                if (currentCommune == null) continue;
-
-                foreach (var neighbor in selectedCommunes)
+                for (int i = 1; i < segment.Count; i++)
                 {
-                    if (neighbor.Label == current) continue;
+                    route.Add(segment[i]);
+                }
 
-                    double newDist = dist + CalculDistanceVille(currentCommune, neighbor);
-                    if (newDist < distances[neighbor.Label])
+                totalDistance += CalculatePathDistance(distanceMatrix, segment);
+
+                currentPoint = waypoint;
+            }
+
+            if (isValidRoute)
+            {
+                var finalSegment = ShortestPathDirect(distanceMatrix, currentPoint, end);
+
+                if (finalSegment.Count == 0)
+                {
+                    isValidRoute = false;
+                }
+                else
+                {
+                    for (int i = 1; i < finalSegment.Count; i++)
                     {
-                        var oldEntry = pq.FirstOrDefault(p => p.Item2 == neighbor.Label);
-                        if (oldEntry.Item2 != null)
-                        {
-                            pq.Remove(oldEntry);
-                        }
-
-                        distances[neighbor.Label] = newDist;
-                        previous[neighbor.Label] = current;
-                        pq.Add((newDist, neighbor.Label));
+                        route.Add(finalSegment[i]);
                     }
+
+                    totalDistance += CalculatePathDistance(distanceMatrix, finalSegment);
                 }
             }
 
-            return ReconstructPath(previous, start, end);
+            if (isValidRoute && totalDistance < minTotalDistance)
+            {
+                minTotalDistance = totalDistance;
+                bestRoute = new List<string>(route);
+            }
         }
-        catch (Exception ex)
+
+        return bestRoute ?? new List<string> { "Aucun itinéraire valide trouvé" };
+    }
+
+    private List<string> ShortestPathDirect(
+        Dictionary<string, Dictionary<string, double>> distanceMatrix,
+        string start,
+        string end)
+    {
+        if (start == end)
+            return new List<string> { start };
+
+        var distances = new Dictionary<string, double>();
+        var previous = new Dictionary<string, string>();
+        var priorityQueue = new List<(double Distance, string Node)>();
+        var visited = new HashSet<string>();
+
+        foreach (var node in distanceMatrix.Keys)
         {
-            ErrorMessage = $"Erreur dans Dijkstra: {ex.Message}";
-            return new List<string>();
+            distances[node] = double.MaxValue;
         }
+
+        distances[start] = 0;
+        priorityQueue.Add((0, start));
+
+        while (priorityQueue.Count > 0)
+        {
+            priorityQueue.Sort((a, b) => a.Distance.CompareTo(b.Distance));
+            var (currentDist, currentNode) = priorityQueue[0];
+            priorityQueue.RemoveAt(0);
+
+            if (visited.Contains(currentNode))
+                continue;
+
+            visited.Add(currentNode);
+
+            if (currentNode == end)
+                break;
+
+            foreach (var neighbor in distanceMatrix[currentNode].Keys)
+            {
+                if (visited.Contains(neighbor))
+                    continue;
+
+                double newDist = distances[currentNode] + distanceMatrix[currentNode][neighbor];
+
+                if (newDist < distances[neighbor])
+                {
+                    distances[neighbor] = newDist;
+                    previous[neighbor] = currentNode;
+                    priorityQueue.Add((newDist, neighbor));
+                }
+            }
+        }
+
+        return ReconstructPath(previous, start, end);
+    }
+
+    private double CalculatePathDistance(
+        Dictionary<string, Dictionary<string, double>> distanceMatrix,
+        List<string> path)
+    {
+        double distance = 0;
+
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            distance += distanceMatrix[path[i]][path[i + 1]];
+        }
+
+        return distance;
     }
 
     private List<string> ReconstructPath(Dictionary<string, string> previous, string start, string end)
     {
-        var path = new List<string>();
+        if (start == end)
+            return new List<string> { start };
 
-        // Vérification si un chemin existe
         if (!previous.ContainsKey(end))
-        {
             return new List<string>();
-        }
 
-        for (string at = end; at != null; at = previous.GetValueOrDefault(at))
+        var path = new List<string>();
+        string current = end;
+        while (current != null)
         {
-            path.Add(at);
-
-            // Si on est arrivé au point de départ, on sort de la boucle
-            if (at == start)
+            path.Add(current);
+            if (current == start)
                 break;
+            current = previous.GetValueOrDefault(current);
         }
 
         path.Reverse();
+
         return path.Count > 1 ? path : new List<string>();
     }
 
