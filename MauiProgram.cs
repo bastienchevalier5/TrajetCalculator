@@ -28,7 +28,6 @@ namespace TrajetCalculator
 
 
             builder.Services.AddScoped<DatabaseService>();
-            builder.Services.AddScoped<MapService>();
 
 
 #if DEBUG
