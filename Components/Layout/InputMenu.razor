@@ -454,16 +454,16 @@ style="
         public string? InseeCode { get; set; }
     }
 
-    private async Task<List<string>> CalculItineraire(string departure, List<string> waypoints, string arrival)
+    private async Task<List<Commune>> CalculItineraire(string departure, List<string> waypoints, string arrival)
     {
         if (string.IsNullOrEmpty(departure) || string.IsNullOrEmpty(arrival))
-            return new List<string> { "Veuillez sélectionner une ville de départ et une ville d'arrivée." };
+            return new List<Commune>();
 
         var departureCommune = await DatabaseService.GetCommuneByIdAsync(departure);
         var arrivalCommune = await DatabaseService.GetCommuneByIdAsync(arrival);
 
         if (departureCommune == null || arrivalCommune == null)
-            return new List<string> { "Communes de départ ou d'arrivée introuvables." };
+            return new List<Commune>();
 
         var waypointCommunes = new List<Commune>();
         foreach (var waypointId in waypoints)
@@ -483,20 +483,33 @@ style="
         allCommunes.AddRange(waypointCommunes);
         allCommunes.Add(arrivalCommune);
 
-        var distanceMatrix = BuildDistanceMatrix(allCommunes);
+        var communeDict = allCommunes.ToDictionary(c => c.Label, c => c);
 
+        var distanceMatrix = BuildDistanceMatrix(allCommunes);
+        List<string> routeLabels;
         if (waypointCommunes.Count == 0)
         {
-            return ShortestPath(distanceMatrix, departureCommune.Label, arrivalCommune.Label);
+            routeLabels = ShortestPath(distanceMatrix, departureCommune.Label, arrivalCommune.Label);
         }
         else
         {
-            return FindOptimalRouteWithWaypoints(
+            routeLabels = FindOptimalRouteWithWaypoints(
                 distanceMatrix,
                 departureCommune.Label,
                 waypointCommunes.Select(w => w.Label).ToList(),
                 arrivalCommune.Label);
         }
+
+        var routeCommunes = new List<Commune>();
+        foreach (var label in routeLabels)
+        {
+            if (communeDict.ContainsKey(label))
+            {
+                routeCommunes.Add(communeDict[label]);
+            }
+        }
+
+        return routeCommunes;
     }
 
     private Dictionary<string, Dictionary<string, double>> BuildDistanceMatrix(List<Commune> communes)
