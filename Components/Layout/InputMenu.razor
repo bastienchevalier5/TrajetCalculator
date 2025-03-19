@@ -108,7 +108,7 @@ style="
 
             <div class="mt-3">
                 <div class="d-flex gap-2">
-                    <button type="submit" @onclick="MettreAJourCarte" class="btn btn-primary flex-grow-1">Calculer l'itinéraire</button>
+                    <button type="submit" class="btn btn-primary flex-grow-1">Calculer l'itinéraire</button>
                 </div>
             </div>
         </EditForm>
@@ -255,7 +255,6 @@ style="
 
         try
         {
-
             if (SelectedDepartureId == null)
             {
                 HasError = true;
@@ -292,6 +291,11 @@ style="
                 HasError = true;
                 ErrorMessage = "Aucun itinéraire valide n'a pu être calculé entre ces villes";
                 CalculatedRoute = new RouteResult();
+            }
+            else
+            {
+                // Appeler MettreAJourCarte uniquement si l'itinéraire est calculé avec succès
+                await MettreAJourCarte();
             }
         }
         catch (Exception ex)
@@ -340,10 +344,6 @@ style="
             FilteredCommunes = new List<Commune>();
         }
     }
-    private string? Depart;
-    private string? Etape1;
-    private string? Etape2;
-    private string? Etape3;
     private string? Arrivee;
     private int castInt;
     private KmCounter? counterRef;
@@ -351,71 +351,20 @@ style="
 
     private async Task MettreAJourCarte()
     {
-        // Réinitialiser la liste des villes sélectionnées
-        selectionVilles.Clear();
-
-        // S'assurer que AllCommunes est bien chargé et trié
-        if (AllCommunes == null || AllCommunes.Count == 0)
-        {
-            Console.WriteLine("❌ Erreur : AllCommunes est vide !");
-            // Essayer de recharger la liste si elle est vide
-            AllCommunes = (await DatabaseService.GetCommunesAsync()).OrderBy(c => c.Label).ToList();
-            if (AllCommunes.Count == 0) return; // Si toujours vide, abandonner
-        }
-
-        // Ajouter la ville de départ
-        if (!string.IsNullOrEmpty(SelectedDepartureId))
-        {
-            var depart = AllCommunes.FirstOrDefault(c => c.InseeCode == SelectedDepartureId);
-            if (depart != null) selectionVilles.Add(depart);
-        }
-
-        // Ajouter les étapes intermédiaires dans l'ordre de la liste Waypoints
-        foreach (var waypoint in Waypoints)
-        {
-            if (!string.IsNullOrEmpty(waypoint.InseeCode))
-            {
-                var etape = AllCommunes.FirstOrDefault(c => c.InseeCode == waypoint.InseeCode);
-                if (etape != null) selectionVilles.Add(etape);
-            }
-        }
-
-        // Ajouter la ville d'arrivée
-        if (!string.IsNullOrEmpty(SelectedArrivalId))
-        {
-            var arrivee = AllCommunes.FirstOrDefault(c => c.InseeCode == SelectedArrivalId);
-            if (arrivee != null) selectionVilles.Add(arrivee);
-        }
-
-        // Vérifier si des villes sont trouvées
-        if (selectionVilles.Count == 0)
-        {
-            Console.WriteLine("❌ Aucune ville trouvée après filtrage !");
-            return;
-        }
-
-        Console.WriteLine("✅ Villes envoyées à la carte :");
-        foreach (var ville in selectionVilles)
-        {
-            Console.WriteLine($"{ville.Label} - {ville.Latitude}, {ville.Longitude}");
-        }
-
-        // Maintenant nous avons une liste ordonnée des villes pour l'itinéraire
-        await MapService.AjouterMarqueursAsync(selectionVilles);
-
-        // Optionnel : calcul et affichage de l'itinéraire sur la carte
+        // Utiliser directement l'itinéraire calculé
         if (CalculatedRoute != null && CalculatedRoute.Route.Count > 0)
         {
             // Utilisez CalculatedRoute.Route qui contient déjà l'ordre optimal des villes
             await MapService.AjouterMarqueursAsync(CalculatedRoute.Route);
+
+            castInt = (int)CalculatedRoute.TotalDistance;
+            counterRef?.DemarrerAnimation(castInt);
+            RandomPhrase = phraseRef?.GenerateRandomPhrase(castInt);
         }
-
-        castInt = (int)CalculatedRoute.TotalDistance;
-        counterRef?.DemarrerAnimation(castInt);
-
-        RandomPhrase = phraseRef?.GenerateRandomPhrase(castInt);
-
-        
+        else
+        {
+            Console.WriteLine("❌ Aucun itinéraire calculé disponible !");
+        }
     }
 
     private void FilterCommunes(string searchText)
