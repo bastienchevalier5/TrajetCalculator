@@ -105,30 +105,31 @@ style="
 <datalist id="communesList">
     @foreach (var commune in FilteredCommunes)
     {
-        <div class="mt-4 p-3 w-100 border border-secondary rounded-3">
-            <h4 class="text-white mb-3">Itinéraire calculé:</h4>
-            <div class="d-flex flex-column align-items-start">
-                @for (int i = 0; i < CalculatedRoute.Route.Count; i++)
-                {
-                    <div class="d-flex gap-2 align-items-center mb-2">
-                        <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="width: 24px; height: 24px;">
-                            <span class="text-white m-0 p-0">@(i + 1)</span>
-                        </div>
-                        <span class="text-white">@CalculatedRoute[i].Route.Label</span>
+        <option value="@commune.Label (@commune.ZipCode)" data-insee="@commune.InseeCode"></option>
+    }
+</datalist>
+<div class="mt-4 p-3 w-100 border border-secondary rounded-3">
+    <h4 class="text-white mb-3">Itinéraire calculé:</h4>
+    <div class="d-flex flex-column align-items-start">
+        @for (int i = 0; i < CalculatedRoute.Route.Count; i++)
+            {
+                <div class="d-flex gap-2 align-items-center mb-2">
+                    <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="width: 24px; height: 24px;">
+                        <span class="text-white m-0 p-0">@(i + 1)</span>
                     </div>
-                    <span class="text-white">@CalculatedRoute.Route[i]</span>
+                    <span class="text-white">@CalculatedRoute.Route[i].Label</span>
                 </div>
                 @if (i < CalculatedRoute.Route.Count - 1)
                 {
                     <div class="ms-3 ps-1" style="border-left: 2px dashed #6c757d; height: 15px;"></div>
                 }
             }
-        </div>
-        <div class="mt-3 text-white">
-            <small>Distance totale estimée: @Math.Round(CalculatedRoute.TotalDistance, 2) km</small>
-        </div>
     </div>
-}
+    <div class="mt-3 text-white">
+        <small>Distance totale estimée: @Math.Round(CalculatedRoute.TotalDistance, 2) km</small>
+    </div>
+</div>
+
 @if (HasError)
 {
     <div class="mt-3 p-2 alert alert-danger">
