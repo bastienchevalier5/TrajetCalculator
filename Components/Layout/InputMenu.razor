@@ -26,13 +26,14 @@ style="
                     <i class="bi bi-geo-alt-fill text-white m-0"></i>
                 </div>
                 <input type="text" id="departureInput"
-                @bind-value="SelectedDepartureLabel"
-                @bind-value:event="oninput"
-                @onchange="e => SelectDepartureCommune(e.Value.ToString())"
-                placeholder="Ville de départ"
-                list="communesList"
-                class="input-route bg-transparent p-2 border border-secondary text-white w-100"
-                style="border-radius:50px; transition: all 0.3s ease;" />
+                       @bind-value="SelectedDepartureLabel"
+                       @bind-value:event="oninput"
+                       @onkeyup="() => FilterCommunes(SelectedDepartureLabel)"
+                       @onchange="e => SelectDepartureCommune(e.Value.ToString())"
+                       placeholder="Ville de départ"
+                       list="communesList"
+                       class="input-route bg-transparent p-2 border border-secondary text-white w-100"
+                       style="border-radius:50px; transition: all 0.3s ease;" />
 
             </div>
 
@@ -44,13 +45,14 @@ style="
                         <i class="bi bi-circle-fill text-white m-0"></i>
                     </div>
                     <input type="text" id="waypointInput-@waypoint.Id"
-                    @bind-value="waypoint.Label"
-                    @bind-value:event="oninput"
-                    @onchange="e => SelectWaypointCommune(waypoint.Id, e.Value.ToString())"
-                    placeholder="Étape intermédiaire"
-                    list="communesList"
-                    class="input-route bg-transparent p-2 border border-secondary text-white w-100"
-                    style="border-radius:50px; transition: all 0.3s ease;" />
+                           @bind-value="waypoint.Label"
+                           @bind-value:event="oninput"
+                           @onkeyup="() => FilterCommunes(waypoint.Label)"
+                           @onchange="e => SelectWaypointCommune(waypoint.Id, e.Value.ToString())"
+                           placeholder="Étape intermédiaire"
+                           list="communesList"
+                           class="input-route bg-transparent p-2 border border-secondary text-white w-100"
+                           style="border-radius:50px; transition: all 0.3s ease;" />
 
                     <button type="button" class="p-0 btn btn-sm bg-transparent border-0 position-relative"
                     @onclick="() => RemoveWaypoint(waypoint.Id)"
@@ -75,13 +77,14 @@ style="
                     <i class="bi bi-flag-fill text-white m-0"></i>
                 </div>
                 <input type="text" id="arrivalInput"
-                @bind-value="SelectedArrivalLabel"
-                @bind-value:event="oninput"
-                @onchange="e => SelectArrivalCommune(e.Value.ToString())"
-                placeholder="Ville d'arrivée"
-                list="communesList"
-                class="input-route bg-transparent p-2 border border-secondary text-white w-100"
-                style="border-radius:50px; transition: all 0.3s ease;" />
+                       @bind-value="SelectedArrivalLabel"
+                       @bind-value:event="oninput"
+                       @onkeyup="() => FilterCommunes(SelectedArrivalLabel)"
+                       @onchange="e => SelectArrivalCommune(e.Value.ToString())"
+                       placeholder="Ville d'arrivée"
+                       list="communesList"
+                       class="input-route bg-transparent p-2 border border-secondary text-white w-100"
+                       style="border-radius:50px; transition: all 0.3s ease;" />
 
             </div>
 
@@ -411,14 +414,12 @@ style="
         await MapService.AjouterMarqueursAsync(selectionVilles);
     }
 
-
-    private void FilterCommunes(ChangeEventArgs e)
+    private void FilterCommunes(string searchText)
     {
-        string searchText = e.Value?.ToString()?.Trim() ?? "";
-
+        searchText = searchText?.Trim() ?? "";
         if (string.IsNullOrEmpty(searchText))
         {
-            FilteredCommunes = AllCommunes;
+            FilteredCommunes = AllCommunes.Take(50).ToList();
             return;
         }
 
@@ -431,7 +432,8 @@ style="
                         !startsWith.Contains(c))
             .ToList();
 
-        FilteredCommunes = startsWith.Concat(contains).Take(50).ToList(); // Limiter pour des raisons de performance
+        // Fusionner les résultats
+        FilteredCommunes = startsWith.Concat(contains).Take(50).ToList();
     }
 
 
