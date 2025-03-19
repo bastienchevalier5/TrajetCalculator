@@ -121,7 +121,7 @@ style="
                         <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="width: 24px; height: 24px;">
                             <span class="text-white m-0 p-0">@(i + 1)</span>
                         </div>
-                        <span class="text-white">@CalculatedRoute[i]</span>
+                        <span class="text-white">@CalculatedRoute[i].Label</span>
                     </div>
                     @if (i < CalculatedRoute.Count - 1)
                     {
@@ -196,7 +196,7 @@ style="
     private List<Commune> selectionVilles = new();
 
     // Nouvelles propriétés pour stocker et afficher les résultats
-    private List<string> CalculatedRoute = new();
+    private List<Commune> CalculatedRoute = new();
     private double TotalDistance = 0;
     private bool HasError = false;
     private string ErrorMessage = "";
@@ -303,7 +303,7 @@ style="
             {
                 HasError = true;
                 ErrorMessage = "Aucun itinéraire valide n'a pu être calculé entre ces villes";
-                CalculatedRoute = new List<string>();
+                CalculatedRoute = new List<Commune>();
             }
             else
             {
@@ -315,7 +315,7 @@ style="
         {
             HasError = true;
             ErrorMessage = $"Erreur lors du calcul : {ex.Message}";
-            CalculatedRoute = new List<string>();
+            CalculatedRoute = new List<Commune>();
         }
 
         StateHasChanged(); // Force UI refresh
@@ -329,8 +329,8 @@ style="
 
         for (int i = 0; i < CalculatedRoute.Count - 1; i++)
         {
-            var startCity = AllCommunes.FirstOrDefault(c => c.Label == CalculatedRoute[i]);
-            var endCity = AllCommunes.FirstOrDefault(c => c.Label == CalculatedRoute[i + 1]);
+            var startCity = AllCommunes.FirstOrDefault(c => c.Label == CalculatedRoute[i].Label);
+            var endCity = AllCommunes.FirstOrDefault(c => c.Label == CalculatedRoute[i + 1].Label);
 
             if (startCity != null && endCity != null)
             {
