@@ -1,54 +1,36 @@
 ﻿@using System;
 @using System.Collections.Generic;
 
-<div class="container">
-
-    <div class="form-group">
-        <input type="number" id="distance" class="form-control" @bind="Distance" step="0.1" min="0" />
-    </div>
-
-    <button class="btn btn-primary mt-2" @onclick="GenerateRandomPhrase">Générer une phrase</button>
-
-    @if (!string.IsNullOrEmpty(RandomPhrase))
-    {
-        <div class="result mt-3 p-3">
-            @RandomPhrase
-        </div>
-    }
-</div>
-
 @code {
     private double Distance { get; set; }
     private string RandomPhrase { get; set; } = string.Empty;
     private Random random = new Random();
 
-    private List<Func<double, string>> PhraseTemplates = new List<Func<double, string>>
+    private List<Func<int, string>> PhraseTemplates = new List<Func<int, string>>
     {
-        distance => $"Un escargot mettrait environ {Math.Round(distance / 0.05, 1)} heures pour parcourir cette distance. 🐌",
-        distance => $"Si vous couriez à la vitesse d'un canard en colère, vous mettriez environ {Math.Round(distance / 13.2, 1)} heures. 🦆",
-        distance => $"Un pigeon fatigué mettrait {Math.Round(distance / 50, 1)} heures pour le faire, sauf s'il fait une pause kebab. 🐦",
-        distance => $"Un paresseux ultra-motivé mettrait environ {Math.Round(distance / 0.27, 1)} heures pour parcourir cette distance. 🦥",
-        distance => $"À dos de tortue géante, il vous faudrait environ {Math.Round(distance / 0.3, 1)} heures... sauf si elle fait une sieste en chemin. 🐢",
-        distance => $"Un canard paniqué poursuivi par un enfant en trottinette mettrait {Math.Round(distance / 15, 1)} heures. 🦆",
-        distance => $"Un lévrier de course affamé aurait déjà fait l'aller-retour {Math.Round(distance / 60, 1)} fois. 🐕",
-        distance => $"Si une fourmi tentait de parcourir cette distance, il lui faudrait {Math.Round(distance / 3.1, 1)} heures et une bonne dose de motivation. 🐜",
-        distance => $"Un kangourou sauterait {Math.Round(distance / 0.09, 1)} fois pour faire ce trajet... et ne se retournerait même pas. 🦘",
-        distance => $"Un crabe qui avance de travers mettrait {Math.Round(distance / 27, 1)} heures pour y arriver... ou pas. 🦀",
-        distance => $"Un guépard sprinterait sur cette distance en {Math.Round(distance / 115, 1)} heures, mais uniquement s'il a un rencard important. 🐆",
-        distance => $"Si vous faisiez ce trajet sur le dos d'un dauphin, vous seriez trempé mais arriveriez en {Math.Round(distance / 60, 1)} heures. 🐬",
-        distance => $"Un ours en balade mettrait {Math.Round(distance / 65, 1)} heures... sauf s'il s'arrête pour fouiller des poubelles. 🐻"
+        distance => $"Un escargot mettrait environ {distance / 0.05} heures pour parcourir cette distance. 🐌",
+        distance => $"Si vous couriez à la vitesse d'un canard en colère, vous mettriez environ {distance / 13.2} heures. 🦆",
+        distance => $"Un pigeon fatigué mettrait {distance / 50} heures pour le faire, sauf s'il fait une pause kebab. 🐦",
+        distance => $"Un paresseux ultra-motivé mettrait environ {distance / 0.27} heures pour parcourir cette distance. 🦥",
+        distance => $"À dos de tortue géante, il vous faudrait environ {distance / 0.3} heures... sauf si elle fait une sieste en chemin. 🐢",
+        distance => $"Un canard paniqué poursuivi par un enfant en trottinette mettrait {distance / 15} heures. 🦆",
+        distance => $"Un lévrier de course affamé aurait déjà fait l'aller-retour {distance / 60} fois. 🐕",
+        distance => $"Si une fourmi tentait de parcourir cette distance, il lui faudrait {distance / 3.1} heures et une bonne dose de motivation. 🐜",
+        distance => $"Un kangourou sauterait {distance / 0.09} fois pour faire ce trajet... et ne se retournerait même pas. 🦘",
+        distance => $"Un crabe qui avance de travers mettrait {distance / 27} heures pour y arriver... ou pas. 🦀",
+        distance => $"Un guépard sprinterait sur cette distance en {distance / 115} heures, mais uniquement s'il a un rencard important. 🐆",
+        distance => $"Si vous faisiez ce trajet sur le dos d'un dauphin, vous seriez trempé mais arriveriez en {distance / 60} heures. 🐬",
+        distance => $"Un ours en balade mettrait {distance / 65} heures... sauf s'il s'arrête pour fouiller des poubelles. 🐻"
     };
 
-    private void GenerateRandomPhrase()
+    public string GenerateRandomPhrase(int distance)
     {
-        if (Distance <= 0)
+        if (distance <= 0)
         {
-            RandomPhrase = "Veuillez entrer une distance valide supérieure à 0.";
-            return;
+            return "Veuillez entrer une distance valide supérieure à 0.";
         }
 
         int index = random.Next(PhraseTemplates.Count);
-        RandomPhrase = PhraseTemplates[index](Distance);
+        return PhraseTemplates[index](distance);
     }
 }
-

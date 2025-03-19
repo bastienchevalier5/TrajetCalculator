@@ -6,6 +6,10 @@
 
 @page "/route-planner"
 
+@code{
+    private string? RandomPhrase;
+}
+
 <div class="text-center pt-2 d-flex flex-column align-items-center"
 style="
         background: rgba(255, 255, 255, 0.1);
@@ -19,13 +23,21 @@ style="
     <div class="drag-handle d-flex align-items-center justify-content-center" style="width:100%; height:30px">
         <div class="bg-secondary" style="width:80px;height:5px;border-radius:20px;"></div>
      </div>
-    <DistancePhrases />
-    <KmCounter />
+    <KmCounter @ref="counterRef" />
+    <DistancePhrases @ref="phraseRef" />
+    <div class="container">
+        @if (!string.IsNullOrEmpty(RandomPhrase))
+        {
+            <div class="result mt-3 p-3">
+                @RandomPhrase
+            </div>
+        }
+    </div>
 
     <div class="route-container w-100 overflow-auto" style="max-height: 400px;">
         <EditForm Model="@commune" class="d-flex flex-column gap-2 p-4 rounded-4 position-relative" OnValidSubmit="OnSubmit">
             <!-- Ligne pointillée verticale -->
-            <div class="position-absolute" style="left: 41px; top: 40px; bottom: 40px; width: 2px; border-left: 2px dashed #6c757d; z-index: 1;"></div>
+            <div class="position-absolute" style="left: 41px; top: 40px; bottom: 100px; width: 2px; border-left: 2px dashed #6c757d; z-index: 1;"></div>
 
             <!-- Ville de départ -->
             <div class="d-flex gap-4 align-items-center position-relative" style="z-index: 2;">
@@ -62,9 +74,8 @@ style="
                     style="border-radius:50px; transition: all 0.3s ease;" />
 
                     <button type="button" class="p-0 btn btn-sm bg-transparent border-0 position-relative"
-                    @onclick="() => RemoveWaypoint(waypoint.Id)"
-                    style="border: 2px solid red; border-radius: 50%; transition: box-shadow 0.3s ease;"
-                    onfocus="this.blur();">
+                            @onclick="() => RemoveWaypoint(waypoint.Id)"
+                            style="border: 2px solid red; border-radius: 50%; transition: box-shadow 0.3s ease;" onfocus="this.blur();">
                         <i class="bi bi-x-circle-fill text-danger m-0"></i>
                     </button>
                 </div>
@@ -112,27 +123,6 @@ style="
         <option value="@commune.Label (@commune.ZipCode)" data-insee="@commune.InseeCode"></option>
     }
 </datalist>
-<div class="mt-4 p-3 w-100 border border-secondary rounded-3">
-    <h4 class="text-white mb-3">Itinéraire calculé:</h4>
-    <div class="d-flex flex-column align-items-start">
-        @for (int i = 0; i < CalculatedRoute.Route.Count; i++)
-            {
-                <div class="d-flex gap-2 align-items-center mb-2">
-                    <div class="d-flex justify-content-center align-items-center rounded-circle bg-secondary p-2" style="width: 24px; height: 24px;">
-                        <span class="text-white m-0 p-0">@(i + 1)</span>
-                    </div>
-                    <span class="text-white">@CalculatedRoute.Route[i].Label</span>
-                </div>
-                @if (i < CalculatedRoute.Route.Count - 1)
-                {
-                    <div class="ms-3 ps-1" style="border-left: 2px dashed #6c757d; height: 15px;"></div>
-                }
-            }
-    </div>
-    <div class="mt-3 text-white">
-        <small>Distance totale estimée: @Math.Round(CalculatedRoute.TotalDistance, 2) km</small>
-    </div>
-</div>
 
 @if (HasError)
 {
@@ -355,6 +345,9 @@ style="
     private string? Etape2;
     private string? Etape3;
     private string? Arrivee;
+    private int castInt;
+    private KmCounter? counterRef;
+    private DistancePhrases? phraseRef;
 
     private async Task MettreAJourCarte()
     {
@@ -416,6 +409,13 @@ style="
             // Utilisez CalculatedRoute.Route qui contient déjà l'ordre optimal des villes
             await MapService.AjouterMarqueursAsync(CalculatedRoute.Route);
         }
+
+        castInt = (int)CalculatedRoute.TotalDistance;
+        counterRef?.DemarrerAnimation(castInt);
+
+        RandomPhrase = phraseRef?.GenerateRandomPhrase(castInt);
+
+        
     }
 
     private void FilterCommunes(string searchText)
@@ -446,9 +446,13 @@ style="
         Waypoints.Add(new Waypoint { Id = Waypoints.Count + 1 });
     }
 
-    private void RemoveWaypoint(int id)
+    void RemoveWaypoint(int id)
     {
-        Waypoints.RemoveAll(w => w.Id == id);
+        var waypointToRemove = Waypoints.FirstOrDefault(w => w.Id == id);
+        if (waypointToRemove != null)
+        {
+            Waypoints.Remove(waypointToRemove);
+        }
     }
 
     public class Waypoint

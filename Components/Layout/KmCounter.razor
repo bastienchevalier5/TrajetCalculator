@@ -24,13 +24,6 @@
             <span class="text-white ms-2 fw-bold">km</span>
         </div>
     </div>
-
-    <!-- Bouton de test temporaire -->
-    <button @onclick="GenererDistanceAleatoire"
-            class="btn btn-sm btn-outline-secondary mt-3 text-white"
-            style="border-radius: 20px; font-size: 0.8rem;">
-        Tester l'animation
-    </button>
 </div>
 
 @code {
@@ -57,14 +50,6 @@
             DernierDistance = Distance;
             DemarrerAnimation(Distance);
         }
-    }
-
-    // Méthode pour tester l'animation avec une valeur aléatoire
-    private void GenererDistanceAleatoire()
-    {
-        Random random = new Random();
-        int nouvelleDistance = random.Next(1, 100000);
-        DemarrerAnimation(nouvelleDistance);
     }
 
     private void InitialiserAffichage(int valeur)
@@ -97,7 +82,7 @@
         }
     }
 
-    private void DemarrerAnimation(int nouvelleDonnee)
+    public void DemarrerAnimation(int nouvelleDonnee)
     {
         if (EstEnAnimation)
         {
